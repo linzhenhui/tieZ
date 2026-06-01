@@ -27,7 +27,6 @@
           </view>
           <view class="option-arrow">›</view>
         </view>
-        <!-- #endif -->
 
         <view class="option-card secondary" @click="showFleetLogin">
           <view class="option-left">
@@ -38,6 +37,19 @@
           </view>
           <view class="option-arrow dark">›</view>
         </view>
+        <!-- #endif -->
+
+        <!-- #ifndef MP-WEIXIN -->
+        <view class="option-card secondary" @click="showFleetLogin">
+          <view class="option-left">
+            <view class="option-content">
+              <view class="option-title dark">企微登录</view>
+              <view class="option-subtitle dark">管理端</view>
+            </view>
+          </view>
+          <view class="option-arrow dark">›</view>
+        </view>
+        <!-- #endif -->
       </view>
 
       <!-- 货主端微信登录：资料补全 -->
@@ -494,7 +506,7 @@ const afterWxLogin = async (token: string) => {
 
   if (isUserInfoComplete(userInfo)) {
     userStore.login({
-      role: 'shipper',
+      role: 'owner',
       userInfo: {
         token,
         ...normalized
@@ -640,7 +652,7 @@ const handleShipperWxSubmit = async () => {
     const normalized = normalizeUserInfo(userInfo)
 
     userStore.login({
-      role: 'shipper',
+      role: 'owner',
       userInfo: {
         token,
         ...normalized,

@@ -1,10 +1,11 @@
 import { useUserStore } from '@/store/user'
+import { Role } from '@/api'
 
 let jumpingToLogin = false
 
 export const requireLogin = (
   redirectUrl: string,
-  requiredRole?: 'shipper' | 'fleet'
+  requiredRole?: Role
 ) => {
   const userStore = useUserStore()
 

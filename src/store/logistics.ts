@@ -6,8 +6,14 @@ import {
   submitArriveApi,
   type SubmitArriveParams,
   getMyLogisticsCountApi,
-  getTruckLogisticsCountApi
+  getTruckLogisticsCountApi,
+  type Role
 } from '@/api'
+import { useUserStore } from '@/store/user'
+const userStore = useUserStore()
+const role = userStore.role
+
+
 export interface StatusTab {
   label: string
   value: string
@@ -82,7 +88,7 @@ export const useLogisticsStore = defineStore('logistics', () => {
   /**
    * 只拉字典，不拉统计
    */
-  const loadStatusTabs = async (role: 'owner' | 'fleet') => {
+  const loadStatusTabs = async () => {
     if (role === 'owner' && ownerTabsLoaded.value) return
     if (role === 'fleet' && fleetTabsLoaded.value) return
 
@@ -123,7 +129,7 @@ export const useLogisticsStore = defineStore('logistics', () => {
   /**
    * 只拉统计数量，不自动触发，由外部决定什么时候调用
    */
-  const loadLogisticsCount = async (role: 'owner' | 'fleet') => {
+  const loadLogisticsCount = async () => {
     if (role === 'owner') {
       const res: any = await getMyLogisticsCountApi()
       const data = res?.data || res || {}
@@ -136,7 +142,7 @@ export const useLogisticsStore = defineStore('logistics', () => {
         waitingCount: data.waitingCount || 0
       }
 
-      applyTabsBadge('owner')
+      applyTabsBadge()
     } else {
       const res: any = await getTruckLogisticsCountApi()
       const data = res?.data || res || {}
@@ -149,14 +155,14 @@ export const useLogisticsStore = defineStore('logistics', () => {
         waitingCount: data.waitingCount || 0
       }
 
-      applyTabsBadge('fleet')
+      applyTabsBadge()
     }
   }
 
   /**
    * 把统计数量回填到 tabs.badge
    */
-  const applyTabsBadge = (role: 'owner' | 'fleet') => {
+  const applyTabsBadge = () => {
     if (role === 'owner') {
       ownerStatusTabs.value = ownerStatusTabs.value.map((item) => ({
         ...item,
@@ -180,12 +186,12 @@ export const useLogisticsStore = defineStore('logistics', () => {
    * 可选：一次性刷新字典 + 数量
    * 只是组合方法，不会自动触发
    */
-  const refreshTabsAndCount = async (role: 'owner' | 'fleet') => {
-    await loadStatusTabs(role)
-    await loadLogisticsCount(role)
+  const refreshTabsAndCount = async () => {
+    await loadStatusTabs()
+    await loadLogisticsCount()
   }
 
-  const setCurrentStatus = (role: 'owner' | 'fleet', value: string) => {
+  const setCurrentStatus = (value: string) => {
     if (role === 'owner') {
       ownerCurrentStatus.value = value
     } else {

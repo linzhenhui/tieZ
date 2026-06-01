@@ -71,7 +71,7 @@ const currentStatus = computed({
       : inquiryStore.ownerCurrentStatus
   },
   set(val: string) {
-    inquiryStore.setCurrentStatus(isFleet.value ? 'fleet' : 'owner', val)
+    inquiryStore.setCurrentStatus( val)
   }
 })
 
@@ -113,7 +113,7 @@ const cancelApi = (id: string | number) => {
  * 获取字典 tab：交给 store 缓存
  */
 const loadTabs = async () => {
-  await inquiryStore.loadStatusTabs(isFleet.value ? 'fleet' : 'owner')
+  await inquiryStore.loadStatusTabs()
 }
 
 /**
@@ -158,7 +158,7 @@ const loadList = async (reset = false) => {
     } else {
       pageNum.value += 1
     }
-    await inquiryStore.loadInquiryCount(isFleet.value ? 'fleet' : 'owner')
+    await inquiryStore.loadInquiryCount()
   } catch (err: any) {
     uni.showToast({
       title: err?.message || '加载失败',

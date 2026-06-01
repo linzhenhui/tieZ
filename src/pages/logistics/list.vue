@@ -58,7 +58,7 @@ const currentStatus = computed({
       : logisticsStore.ownerCurrentStatus
   },
   set(val: string) {
-    logisticsStore.setCurrentStatus(isFleet.value ? 'fleet' : 'owner', val)
+    logisticsStore.setCurrentStatus( val)
   }
 })
 
@@ -112,7 +112,7 @@ const loadList = async () => {
     const rows = res?.rows || []
 
     currentList.value = rows.map(normalizeItem)
-    await logisticsStore.loadLogisticsCount(isFleet.value ? 'fleet' : 'owner')
+    await logisticsStore.loadLogisticsCount()
   } catch (err) {
     console.error('加载物流单列表失败:', err)
     currentList.value = []
@@ -136,7 +136,7 @@ onShow(async () => {
   if (!requireLogin('/pages/logistics/list')) return
 
   // 加载 tab（只会取一次字典）
-  await logisticsStore.loadStatusTabs(isFleet.value ? 'fleet' : 'owner')
+  await logisticsStore.loadStatusTabs()
 
   // 如果当前还没默认值，取第一个
   if (!currentStatus.value && tabList.value.length) {

@@ -1,4 +1,4 @@
-export type UserRole = '' | 'shipper' | 'fleet'
+import { Role } from '@/api'
 
 export interface LoginDto {
   username: string
@@ -8,5 +8,5 @@ export interface LoginDto {
 export interface LoginUser {
   token: string
   nickname: string
-  role: UserRole
+  role: Role
 }

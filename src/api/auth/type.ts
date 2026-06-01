@@ -1,3 +1,5 @@
+export type Role = 'owner' | 'fleet' | 'admin' | string
+
 export interface LoginParams {
   username: string
   password: string
@@ -10,7 +12,7 @@ export interface LoginData {
   nickname: string
   phone?: string
   avatar?: string
-  role: 'shipper' | 'fleet' | string
+  role: Role
 }
 
 export interface WxLoginParams {
@@ -24,7 +26,7 @@ export interface WxLoginData {
   nickname: string
   phone?: string
   avatar?: string
-  role: 'shipper' | 'fleet' | string
+  role: Role
 }
 export interface UpdateUserInfoParams {
   avatar?: string

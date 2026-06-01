@@ -43,7 +43,7 @@ async function startSilentLogin() {
         throw new Error('未获取到 token')
     }
     userStore.login({
-        role: 'shipper',
+        role: 'admin',
         userInfo: {
             token
         }

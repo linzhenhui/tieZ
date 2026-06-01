@@ -68,7 +68,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useInquiryStore } from '@/store/inquiry'
-import { useUserStore } from '@/store/user'
 
 type ActionItem = {
   text: string
@@ -108,20 +107,12 @@ const emit = defineEmits<{
 }>()
 
 const inquiryStore = useInquiryStore()
-const userStore = useUserStore()
-
-const isFleet = computed(() => userStore.role === 'fleet')
-
-const statusTabs = computed(() =>
-  inquiryStore.getStatusTabs(isFleet.value ? 'fleet' : 'owner')
-)
 
 /**
  * 状态文案：从字典查
  */
 const statusText = computed(() => {
   return inquiryStore.getStatusLabel(
-    isFleet.value ? 'fleet' : 'owner',
     props.item.status ?? ''
   )
 })
@@ -132,7 +123,6 @@ const statusText = computed(() => {
  */
 const statusClass = computed(() => {
   const index = inquiryStore.getStatusIndex(
-    isFleet.value ? 'fleet' : 'owner',
     props.item.status ?? ''
   )
 

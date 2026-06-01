@@ -1,7 +1,6 @@
 // src/store/user.ts
 import { defineStore } from 'pinia'
-
-type Role = 'shipper' | 'fleet' | ''
+import { Role } from '@/api'
 
 type UserInfo = {
   id?: string
@@ -47,7 +46,7 @@ const loadCache = () => {
 const saveCache = (state: any) => {
   try {
     uni.setStorageSync(USER_KEY, state)
-  } catch {}
+  } catch { }
 }
 
 export const useUserStore = defineStore('user', {
@@ -151,7 +150,7 @@ export const useUserStore = defineStore('user', {
 
       try {
         uni.removeStorageSync(USER_KEY)
-      } catch {}
+      } catch { }
     },
 
     hydrate() {

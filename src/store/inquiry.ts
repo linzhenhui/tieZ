@@ -2,7 +2,10 @@ import { defineStore } from 'pinia'
 import type { InquiryFormData, InquiryOrder, InquiryStatus } from '@/api'
 import { mockInquiryList } from '@/utils/mock'
 import { useLogisticsStore } from './logistics'
-import { getDictDataApi, getMyInquiryCountApi, getTruckInquiryCountApi } from '@/api'
+import { getDictDataApi, getMyInquiryCountApi, getTruckInquiryCountApi, Role } from '@/api'
+import { useUserStore } from '@/store/user'
+const userStore = useUserStore()
+const role = userStore.role
 
 interface TabItem {
   label: string
@@ -117,19 +120,17 @@ export const useInquiryStore = defineStore('inquiry', {
 
     // 按角色取 tab
     getStatusTabs: (state) => {
-      return (role: 'owner' | 'fleet') =>
-        role === 'fleet' ? state.fleetStatusTabs : state.ownerStatusTabs
+      return role === 'fleet' ? state.fleetStatusTabs : state.ownerStatusTabs
     },
 
     // 按角色取当前状态
     getCurrentStatus: (state) => {
-      return (role: 'owner' | 'fleet') =>
-        role === 'fleet' ? state.fleetCurrentStatus : state.ownerCurrentStatus
+      return role === 'fleet' ? state.fleetCurrentStatus : state.ownerCurrentStatus
     },
 
     // 按角色 + 状态值取状态文案
     getStatusLabel: (state) => {
-      return (role: 'owner' | 'fleet', status: string | number) => {
+      return (status: string | number) => {
         const tabs = role === 'fleet' ? state.fleetStatusTabs : state.ownerStatusTabs
         return tabs.find((item) => String(item.value) === String(status))?.label || '未知状态'
       }
@@ -137,7 +138,7 @@ export const useInquiryStore = defineStore('inquiry', {
 
     // 按角色 + status 值 获取它在字典中的顺序
     getStatusIndex: (state) => {
-      return (role: 'owner' | 'fleet', status: string | number) => {
+      return (status: string | number) => {
         const tabs = role === 'fleet' ? state.fleetStatusTabs : state.ownerStatusTabs
         return tabs.findIndex((item) => String(item.value) === String(status))
       }
@@ -237,9 +238,9 @@ export const useInquiryStore = defineStore('inquiry', {
 
     /**
      * 只拉字典，不拉统计
-     * role: 'owner' | 'fleet'
+     * role:Role
      */
-    async loadStatusTabs(role: 'owner' | 'fleet') {
+    async loadStatusTabs() {
       const dictKey =
         role === 'fleet' ? 'pri_inquiry_quote_status' : 'pri_inquiry_status'
 
@@ -315,9 +316,9 @@ export const useInquiryStore = defineStore('inquiry', {
 
     /**
      * 只拉统计数量，不主动触发，由外部决定什么时候调用
-     * role: 'owner' | 'fleet'
+     * role:Role
      */
-    async loadInquiryCount(role: 'owner' | 'fleet') {
+    async loadInquiryCount() {
       if (role === 'owner') {
         const res: any = await getMyInquiryCountApi()
         const data = res?.data || res || {}
@@ -330,7 +331,7 @@ export const useInquiryStore = defineStore('inquiry', {
           ingCount: data.ingCount || 0
         }
 
-        this.applyTabsBadge('owner')
+        this.applyTabsBadge()
       } else {
         const res: any = await getTruckInquiryCountApi()
         const data = res?.data || res || {}
@@ -341,14 +342,14 @@ export const useInquiryStore = defineStore('inquiry', {
           inquiryCount: data.inquiryCount || 0
         }
 
-        this.applyTabsBadge('fleet')
+        this.applyTabsBadge()
       }
     },
 
     /**
      * 把统计数量回填到 tabs.badge
      */
-    applyTabsBadge(role: 'owner' | 'fleet') {
+    applyTabsBadge() {
       if (role === 'owner') {
         this.ownerStatusTabs = this.ownerStatusTabs.map((item) => ({
           ...item,
@@ -370,12 +371,12 @@ export const useInquiryStore = defineStore('inquiry', {
      * 可选：一次性刷新字典 + 数量
      * 只是组合方法，不会自动触发
      */
-    async refreshTabsAndCount(role: 'owner' | 'fleet') {
-      await this.loadStatusTabs(role)
-      await this.loadInquiryCount(role)
+    async refreshTabsAndCount() {
+      await this.loadStatusTabs()
+      await this.loadInquiryCount()
     },
 
-    setCurrentStatus(role: 'owner' | 'fleet', value: string) {
+    setCurrentStatus(value: string) {
       if (role === 'fleet') {
         this.fleetCurrentStatus = value
       } else {

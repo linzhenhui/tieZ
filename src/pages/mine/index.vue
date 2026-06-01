@@ -125,14 +125,14 @@ const isFleet = computed(() => userStore.role === 'fleet')
  */
 onShow(async () => {
   if (!inquiryTabs.value.length) {
-    await inquiryStore.loadStatusTabs(isFleet.value ? 'fleet' : 'owner')
+    await inquiryStore.loadStatusTabs()
   }
   if (!logisticsTabs.value.length) {
-    await logisticsStore.loadStatusTabs(isFleet.value ? 'fleet' : 'owner')
+    await logisticsStore.loadStatusTabs()
   }
   if (userStore.isLogin) {
-    await inquiryStore.loadInquiryCount(isFleet.value ? 'fleet' : 'owner')
-    await logisticsStore.loadLogisticsCount(isFleet.value ? 'fleet' : 'owner')
+    await inquiryStore.loadInquiryCount()
+    await logisticsStore.loadLogisticsCount()
   }
 })
 
@@ -178,7 +178,7 @@ const goAllInquiry = () => {
 }
 
 const goInquiryList = (status: string) => {
-  inquiryStore.setCurrentStatus(isFleet.value ? 'fleet' : 'owner', status)
+  inquiryStore.setCurrentStatus( status)
   uni.navigateTo({
     url: `/pages/inquiry/list`
   })
@@ -191,7 +191,7 @@ const goAllLogistics = () => {
 }
 
 const goLogisticsList = (status: string) => {
-  logisticsStore.setCurrentStatus(isFleet.value ? 'fleet' : 'owner', status)
+  logisticsStore.setCurrentStatus( status)
   uni.navigateTo({
     url: `/pages/logistics/list`
   })
