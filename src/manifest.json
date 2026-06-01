@@ -1,0 +1,21 @@
+{
+  "name": "uni-app-wechat",
+  "appid": "__UNI__DEMO123",
+  "description": "uni-app h5 + wechat mini program demo",
+  "versionName": "1.0.0",
+  "versionCode": "100",
+  "mp-weixin": {
+    "appid": "wx1a623cad9092d83c",
+    "setting": {
+      "urlCheck": false
+    },
+    "usingComponents": true
+  },
+  "h5": {
+    "title": "uni-app-wechat",
+    "router": {
+      "mode": "hash"
+    }
+  }
+}
+

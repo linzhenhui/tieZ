@@ -1,0 +1,29 @@
+@import '@/uni.scss';  
+
+.btn-primary {
+  background: $color-primary;
+  color: #fff;
+  border: 1px solid $color-primary;
+  border-radius: $radius-sm;
+}
+
+.btn-default {
+  background: #fff;
+  color: $color-text;
+  border: 1px solid $color-border;
+  border-radius: $radius-sm;
+}
+
+.btn-ghost {
+  background: #fff;
+  color: $color-primary;
+  border: 1px solid #b7d1ff;
+  border-radius: $radius-sm;
+}
+
+.btn-danger {
+  background: #fff;
+  color: $color-danger;
+  border: 1px solid rgba(250, 81, 81, 0.35);
+  border-radius: $radius-sm;
+}
