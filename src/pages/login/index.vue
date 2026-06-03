@@ -40,7 +40,7 @@
         <!-- #endif -->
 
         <!-- #ifndef MP-WEIXIN -->
-        <view class="option-card secondary" @click="showFleetLogin">
+        <view class="option-card secondary" @click="goAdmin">
           <view class="option-left">
             <view class="option-content">
               <view class="option-title dark">企微登录</view>
@@ -736,7 +736,9 @@ const handleFleetLogin = async () => {
     loading.value = false
   }
 }
-
+const goAdmin =()=>{
+      uni.redirectTo({ url: '/pages/qw/index' })
+}
 </script>
 
 <style scoped lang="scss">

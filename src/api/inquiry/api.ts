@@ -108,6 +108,15 @@ export const queryTruckInquiryListApi = (data: any) => {
   })
 }
 
+// 企微询价单列表
+export const querygmTruckInquiryListApi = (data: any) => {
+  return http({
+    url: '/api/pri/inquiryTruck/gm/myInquiryTruck/queryList',
+    method: 'POST',
+    data
+  })
+}
+
 // 车队报价
 export const truckInquiryQuoteApi = (data: {
   id: string | number

@@ -28,6 +28,15 @@ export const queryFleetLogisticsListApi = (data: LogisticsQueryListParams) => {
   })
 }
 
+/** 企微物流单列表 */
+export const querygmFleetLogisticsListApi = (data: LogisticsQueryListParams) => {
+  return http<BaseResult<{ total: number; rows: LogisticsItem[] }>>({
+    url: '/api/pri/logisticsTruck/gm/myLogisticsTruck/queryList',
+    method: 'POST',
+    data
+  })
+}
+
 /** 我的物流单详情 */
 export const getMyLogisticsDetailApi = (id: string | number) => {
   return http<BaseResult<LogisticsItem>>({

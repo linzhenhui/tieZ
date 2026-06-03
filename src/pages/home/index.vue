@@ -130,13 +130,13 @@ const debounceTimers: Record<FieldKey, ReturnType<typeof setTimeout> | null> = {
   loadingPlace: null,
   destination: null
 }
-const isFleet = computed(() => userStore.role === 'fleet')
+const noOwner = computed(() => userStore.role !== 'owner')
 
 /**
  * 页面显示时初始化
  */
 onShow(async () => {
-  if (isFleet.value) {
+  if (noOwner.value) {
     uni.redirectTo({ url: '/pages/inquiry/list' })
   }
 })

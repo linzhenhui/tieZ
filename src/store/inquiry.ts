@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import type { InquiryFormData, InquiryOrder, InquiryStatus } from '@/api'
 import { mockInquiryList } from '@/utils/mock'
 import { useLogisticsStore } from './logistics'
-import { getDictDataApi, getMyInquiryCountApi, getTruckInquiryCountApi, Role } from '@/api'
+import { getDictDataApi, getMyInquiryCountApi, getgmMyLogisticsCountApi, getTruckInquiryCountApi, Role } from '@/api'
 import { useUserStore } from '@/store/user'
 const userStore = useUserStore()
 const role = userStore.role
@@ -42,7 +42,7 @@ interface InquiryState {
 
   // 统计缓存
   ownerInquiryCount: InquiryCountOwner
-  fleetInquiryCount: InquiryCountFleet
+  fleetInquiryCount: InquiryCountOwner
 }
 
 const getDefaultForm = (): InquiryFormData => ({
@@ -66,9 +66,9 @@ const getDefaultForm = (): InquiryFormData => ({
 const OWNER_COUNT_FIELD_MAP: Record<string, keyof InquiryCountOwner> = {
   // 示例：按你的实际字典值修改
   // 待询价: inquiryCount
-  '0': 'inquiryCount',
+  '1': 'inquiryCount',
   // 报价中: ingCount
-  '1': 'ingCount',
+  '0': 'ingCount',
   // 已报价: quotedCount
   '2': 'quotedCount',
   // 已派单 / 已下单 / 已接单（按你实际字典改）
@@ -83,7 +83,7 @@ const FLEET_COUNT_FIELD_MAP: Record<string, keyof InquiryCountFleet> = {
   '1': 'quotedCount',
   '2': 'cancelCount'
 }
-const OWNER_QUOTE_TAB_VALUE = 'quoteing'
+const OWNER_QUOTE_TAB_VALUE = '0,1'
 export const useInquiryStore = defineStore('inquiry', {
   state: (): InquiryState => ({
     list: [...mockInquiryList],
@@ -106,118 +106,30 @@ export const useInquiryStore = defineStore('inquiry', {
     fleetInquiryCount: {
       quotedCount: 0,
       cancelCount: 0,
-      inquiryCount: 0
+      placedCount: 0,
+      inquiryCount: 0,
+      ingCount: 0
     }
   }),
 
   getters: {
-    getListByStatus: (state) => {
-      return (status: InquiryStatus) => state.list.filter((item) => item.status === status)
-    },
-    getById: (state) => {
-      return (id: string) => state.list.find((item) => item.id === id)
-    },
-
-    // 按角色取 tab
-    getStatusTabs: (state) => {
-      return role === 'fleet' ? state.fleetStatusTabs : state.ownerStatusTabs
-    },
-
-    // 按角色取当前状态
-    getCurrentStatus: (state) => {
-      return role === 'fleet' ? state.fleetCurrentStatus : state.ownerCurrentStatus
-    },
-
     // 按角色 + 状态值取状态文案
     getStatusLabel: (state) => {
       return (status: string | number) => {
-        const tabs = role === 'fleet' ? state.fleetStatusTabs : state.ownerStatusTabs
+        const tabs = role !== 'owner' ? state.fleetStatusTabs : state.ownerStatusTabs
         return tabs.find((item) => String(item.value) === String(status))?.label || '未知状态'
       }
     },
-
     // 按角色 + status 值 获取它在字典中的顺序
     getStatusIndex: (state) => {
       return (status: string | number) => {
-        const tabs = role === 'fleet' ? state.fleetStatusTabs : state.ownerStatusTabs
+        const tabs = role !== 'owner' ? state.fleetStatusTabs : state.ownerStatusTabs
         return tabs.findIndex((item) => String(item.value) === String(status))
       }
     }
   },
 
   actions: {
-    setDraft(data: Partial<InquiryFormData>) {
-      this.formDraft = {
-        ...this.formDraft,
-        ...data
-      }
-    },
-
-    resetDraft() {
-      this.formDraft = getDefaultForm()
-      this.editingId = ''
-    },
-
-    loadDraftFromOrder(id: string) {
-      const target = this.list.find((item) => item.id === id)
-      if (!target) return
-
-      this.editingId = id
-      this.formDraft = {
-        id: target.id,
-        orderNo: target.orderNo,
-        imageText: target.imageText || '',
-        boxPlace1: target.boxPlace1,
-        boxPlace2: target.boxPlace2,
-        loadingPlace: target.loadingPlace,
-        destination: target.destination,
-        containerType: target.containerType,
-        containerCount: target.containerCount,
-        pickupTime: target.pickupTime,
-        weight: target.weight,
-        goodsName: target.goodsName,
-        remark: target.remark
-      }
-    },
-
-    submitInquiry() {
-      if (this.editingId) {
-        const index = this.list.findIndex((item) => item.id === this.editingId)
-        if (index > -1) {
-          this.list[index] = {
-            ...this.list[index],
-            ...this.formDraft,
-            boxPlace: this.formDraft.boxPlace1,
-            fromCity: this.formDraft.loadingPlace || '台州',
-            toCity: this.formDraft.destination || '金华',
-            status: 'inquiring'
-          } as InquiryOrder
-        }
-      } else {
-        const newItem: InquiryOrder = {
-          id: `inq-${Date.now()}`,
-          orderNo: `TZ${Date.now()}`,
-          createdAt: '2026-03-30 10:10:10',
-          status: 'inquiring',
-          quotedPrice: undefined,
-          fromCity: this.formDraft.loadingPlace || '台州',
-          toCity: this.formDraft.destination || '金华',
-          boxPlace: this.formDraft.boxPlace1,
-          ...this.formDraft
-        }
-        this.list.unshift(newItem)
-      }
-
-      this.resetDraft()
-    },
-
-    cancelInquiry(id: string) {
-      const target = this.list.find((item) => item.id === id)
-      if (target) {
-        target.status = 'cancelled'
-      }
-    },
-
     confirmInquiry(id: string) {
       const target = this.list.find((item) => item.id === id)
       if (!target) return
@@ -226,14 +138,6 @@ export const useInquiryStore = defineStore('inquiry', {
 
       const logisticsStore = useLogisticsStore()
       logisticsStore.createFromInquiry(target)
-    },
-
-    fleetQuote(id: string, price: number) {
-      const target = this.list.find((item) => item.id === id)
-      if (!target) return
-
-      target.status = 'quoted'
-      target.quotedPrice = price
     },
 
     /**
@@ -291,20 +195,31 @@ export const useInquiryStore = defineStore('inquiry', {
         }
         return tabs
       }
-
+      console.log("🚀 ~ role:", role)
+      if (role === 'admin') {
+        const tabs: TabItem[] = rows
+          .map((item: any) => {
+            return {
+              label: item.dictLabel,
+              value: item.dictValue,
+              badge: 0
+            }
+          })
+        this.fleetStatusTabs = tabs
+        if (!this.fleetCurrentStatus && tabs.length) {
+          this.fleetCurrentStatus = tabs[0].value
+        }
+        return tabs
+      }
       // 车队端：保持原来的字典渲染逻辑
       const tabs: TabItem[] = rows
         .map((item: any) => {
-          if (item.dictValue === '1') {
-            item.dictLabel = '报价中'
-          }
           return {
             label: item.dictLabel,
             value: item.dictValue,
             badge: 0
           }
         })
-        .filter((item: TabItem) => item.label || item.value)
 
       this.fleetStatusTabs = tabs
       if (!this.fleetCurrentStatus && tabs.length) {
@@ -324,6 +239,19 @@ export const useInquiryStore = defineStore('inquiry', {
         const data = res?.data || res || {}
 
         this.ownerInquiryCount = {
+          quotedCount: data.quotedCount || 0,
+          cancelCount: data.cancelCount || 0,
+          placedCount: data.placedCount || 0,
+          inquiryCount: data.inquiryCount + data.ingCount || 0,
+          ingCount: data.ingCount || 0
+        }
+
+        this.applyTabsBadge()
+      } else if (role === 'admin') {
+        const res: any = await getgmMyLogisticsCountApi()
+        const data = res?.data || res || {}
+
+        this.fleetInquiryCount = {
           quotedCount: data.quotedCount || 0,
           cancelCount: data.cancelCount || 0,
           placedCount: data.placedCount || 0,
@@ -357,6 +285,13 @@ export const useInquiryStore = defineStore('inquiry', {
             OWNER_COUNT_FIELD_MAP[item.value] || 'inquiryCount'
           ] || 0
         }))
+      } else if (role === 'admin') {
+        this.fleetStatusTabs = this.fleetStatusTabs.map((item) => ({
+          ...item,
+          badge: this.fleetInquiryCount[
+            OWNER_COUNT_FIELD_MAP[item.value] || 'inquiryCount'
+          ] || 0
+        }))
       } else {
         this.fleetStatusTabs = this.fleetStatusTabs.map((item) => ({
           ...item,
@@ -377,7 +312,7 @@ export const useInquiryStore = defineStore('inquiry', {
     },
 
     setCurrentStatus(value: string) {
-      if (role === 'fleet') {
+      if (role !== 'owner') {
         this.fleetCurrentStatus = value
       } else {
         this.ownerCurrentStatus = value

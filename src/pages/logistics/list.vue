@@ -26,6 +26,7 @@ import { requireLogin } from '@/utils/guard'
 import {
   queryMyLogisticsListApi,
   queryFleetLogisticsListApi,
+  querygmFleetLogisticsListApi,
   cancelFleetLogisticsApi
 } from '@/api/logistics'
 import type { LogisticsItem } from '@/api/logistics/type'
@@ -36,6 +37,7 @@ const userStore = useUserStore()
 const logisticsStore = useLogisticsStore()
 
 const isFleet = computed(() => userStore.role === 'fleet')
+const isOwner = computed(() => userStore.role === 'owner')
 
 const currentList = ref<any[]>([])
 const loading = ref(false)
@@ -45,7 +47,7 @@ const pageReady = ref(false)
  * 角色对应的 tab
  */
 const tabList = computed(() =>
-  isFleet.value ? logisticsStore.fleetStatusTabs : logisticsStore.ownerStatusTabs
+  !isOwner.value ? logisticsStore.fleetStatusTabs : logisticsStore.ownerStatusTabs
 )
 
 /**
@@ -53,7 +55,7 @@ const tabList = computed(() =>
  */
 const currentStatus = computed({
   get() {
-    return isFleet.value
+    return !isOwner.value
       ? logisticsStore.fleetCurrentStatus
       : logisticsStore.ownerCurrentStatus
   },
@@ -99,7 +101,9 @@ const loadList = async () => {
   try {
     const req = isFleet.value
       ? queryFleetLogisticsListApi
-      : queryMyLogisticsListApi
+      : isOwner.value
+      ? queryMyLogisticsListApi
+      :querygmFleetLogisticsListApi
 
     const res: any = await req({
       status: currentStatus.value || '',
@@ -160,7 +164,7 @@ const goDetail = (id: string | number) => {
  * 车队端取消物流单
  */
 const handleCancel = (id: string | number) => {
-  if (!isFleet.value) return
+  if (isOwner.value) return
 
   uni.showModal({
     title: '提示',

@@ -49,10 +49,9 @@
         <text class="label">注意事项</text>
         <text class="value">{{ item.notice }}</text>
       </view>
-
-      <view v-if="item.price !== null && item.price !== undefined" class="row">
-        <text class="label">报价</text>
-        <text class="value">{{ item.price }} {{ item.currency || '元' }}</text>
+      <view  v-if="item.price !== null && item.price !== undefined" class="price-row">
+        <text class="price-label">运费</text>
+        <text class="price-value">{{ item.currency || '¥' }} {{ item.price || '-' }}</text>
       </view>
     </view>
 
@@ -71,7 +70,7 @@ import { useInquiryStore } from '@/store/inquiry'
 
 type ActionItem = {
   text: string
-  event: 'edit' | 'cancel' | 'confirm' | 'quote'
+  event: 'edit' | 'cancel' | 'confirm' | 'quote' | 'askprice'
   type?: 'primary' | 'success' | 'warn' | 'default'
 }
 
@@ -104,6 +103,7 @@ const emit = defineEmits<{
   (e: 'cancel', id: string): void
   (e: 'confirm', id: string): void
   (e: 'quote', id: string): void
+  (e: 'askprice', id: string): void
 }>()
 
 const inquiryStore = useInquiryStore()
@@ -143,6 +143,7 @@ const handleAction = (event: ActionItem['event']) => {
   if (event === 'cancel') emit('cancel', id)
   if (event === 'confirm') emit('confirm', id)
   if (event === 'quote') emit('quote', id)
+  if (event === 'askprice') emit('askprice', id)
 }
 </script>
 
@@ -259,5 +260,25 @@ const handleAction = (event: ActionItem['event']) => {
 .default {
   background: #f5f5f5;
   color: $color-text-2;
+}
+.price-row {
+  margin-top: 18rpx;
+  padding: 18rpx 20rpx;
+  background: #f7faff;
+  border-radius: $radius-sm;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.price-label {
+  font-size: 26rpx;
+  color: $color-text-3;
+}
+
+.price-value {
+  font-size: 34rpx;
+  font-weight: 600;
+  color: $color-primary;
 }
 </style>

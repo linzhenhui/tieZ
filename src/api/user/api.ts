@@ -15,3 +15,11 @@ export const getMyLogisticsCountApi = () => {
 export const getTruckLogisticsCountApi = () => {
     return http({ url: '/api/pri/logisticsTruck/truckCount', method: 'GET' })
 }
+
+export const getgmMyLogisticsCountApi = () => {
+    return http({ url: '/api/pri/inquiryTruck/gm/myCount', method: 'GET' })
+}
+
+export const getgmTruckLogisticsCountApi = () => {
+    return http({ url: '/api/pri/logisticsTruck/gm/myCount', method: 'GET' })
+}

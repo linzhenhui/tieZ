@@ -7,6 +7,7 @@ import {
   type SubmitArriveParams,
   getMyLogisticsCountApi,
   getTruckLogisticsCountApi,
+  getgmTruckLogisticsCountApi,
   type Role
 } from '@/api'
 import { useUserStore } from '@/store/user'
@@ -90,7 +91,7 @@ export const useLogisticsStore = defineStore('logistics', () => {
    */
   const loadStatusTabs = async () => {
     if (role === 'owner' && ownerTabsLoaded.value) return
-    if (role === 'fleet' && fleetTabsLoaded.value) return
+    if (role !== 'owner' && fleetTabsLoaded.value) return
 
     const res: any = await getDictDataApi('pri_logistics_status')
     const list = res?.data || res || []
@@ -132,6 +133,19 @@ export const useLogisticsStore = defineStore('logistics', () => {
   const loadLogisticsCount = async () => {
     if (role === 'owner') {
       const res: any = await getMyLogisticsCountApi()
+      const data = res?.data || res || {}
+
+      ownerLogisticsCount.value = {
+        cancelCount: data.cancelCount || 0,
+        dispatchingCount: data.dispatchingCount || 0,
+        pickingCount: data.pickingCount || 0,
+        endCount: data.endCount || 0,
+        waitingCount: data.waitingCount || 0
+      }
+
+      applyTabsBadge()
+    } else if (role === 'admin') {
+      const res: any = await getgmTruckLogisticsCountApi()
       const data = res?.data || res || {}
 
       ownerLogisticsCount.value = {

@@ -88,10 +88,10 @@ const emit = defineEmits<{
 const userStore = useUserStore()
 const logisticsStore = useLogisticsStore()
 
-const isFleet = computed(() => userStore.role === 'fleet')
+const isOwner = computed(() => userStore.role === 'owner')
 
 const statusDictList = computed(() =>
-  isFleet.value
+  !isOwner.value
     ? logisticsStore.fleetStatusDictList
     : logisticsStore.ownerStatusDictList
 )
@@ -180,7 +180,7 @@ const stageKey = computed<StageKey>(() => {
  */
 const defaultActions = computed<ActionItem[]>(() => {
   // 货主端：只看详情
-  if (!isFleet.value) {
+  if (isOwner.value) {
     return [
       {
         text: '查看详情',
