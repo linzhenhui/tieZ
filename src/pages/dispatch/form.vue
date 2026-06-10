@@ -31,20 +31,17 @@
 
           <view class="form-item">
             <text class="label required">车挂号</text>
-            <input v-model="form.trailerNo" class="input" type="number" placeholder="请输入车挂号"
-              placeholder-class="placeholder" />
+            <input v-model="form.trailerNo" class="input" placeholder="请输入车挂号" placeholder-class="placeholder" />
           </view>
 
           <view class="form-item">
             <text class="label required">车挂重</text>
-            <input v-model="form.carWeight" class="input" type="number" placeholder="请输入车挂重"
-              placeholder-class="placeholder" />
+            <input v-model="form.carWeight" class="input" placeholder="请输入车挂重" placeholder-class="placeholder" />
           </view>
 
           <view class="form-item">
             <text class="label required">车长</text>
-            <input v-model="form.carLength" class="input" type="number" placeholder="请输入车长"
-              placeholder-class="placeholder" />
+            <input v-model="form.carLength" class="input" placeholder="请输入车长" placeholder-class="placeholder" />
           </view>
         </view>
 

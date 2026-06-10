@@ -55,6 +55,16 @@ export const getFleetLogisticsDetailApi = (id: string | number) => {
   })
 }
 
+
+/** 管理端物流单详情 */
+export const getAdminLogisticsDetailApi = (id: string | number) => {
+  return http<BaseResult<LogisticsItem>>({
+    url: '/api/pri/logisticsTruck/gm/myLogisticsTruck/detail',
+    method: 'GET',
+    data: { id }
+  })
+}
+
 /** 车队取消物流单 */
 export const cancelFleetLogisticsApi = (id: string | number) => {
   return http<BaseResult<null>>({

@@ -106,7 +106,7 @@
       </SectionCard>
 
       <!-- 费用明细 -->
-      <SectionCard title="费用明细">
+      <SectionCard :title="isAdmin ? '成本明细' : '费用明细'" v-if="isFleet || isAdmin">
         <view class="fee-table">
           <view class="fee-row fee-head">
             <text class="fee-cell">费项</text>
@@ -116,7 +116,7 @@
             <text class="fee-cell">备注</text>
           </view>
 
-          <view class="fee-row" v-for="(item, index) in feeRows" :key="index">
+          <view class="fee-row" v-for="(item, index) in fleetFeeRows" :key="index">
             <text class="fee-cell">{{ item.feeItemName || '-' }}</text>
             <text class="fee-cell">{{ item.unitPrice ?? '-' }}</text>
             <text class="fee-cell">{{ item.quantity || '-' }}</text>
@@ -124,7 +124,30 @@
             <text class="fee-cell">{{ item.remark || '-' }}</text>
           </view>
 
-          <view v-if="!feeRows.length" class="empty-inline">暂无费用明细</view>
+          <view v-if="!fleetFeeRows.length" class="empty-inline">暂无费用明细</view>
+        </view>
+      </SectionCard>
+
+      <!-- 费用明细 -->
+      <SectionCard :title="isAdmin ? '收入明细' : '费用明细'" v-if="isAdmin || isOwner">
+        <view class="fee-table">
+          <view class="fee-row fee-head">
+            <text class="fee-cell">费项</text>
+            <text class="fee-cell">单价</text>
+            <text class="fee-cell">数量</text>
+            <text class="fee-cell">金额</text>
+            <text class="fee-cell">备注</text>
+          </view>
+
+          <view class="fee-row" v-for="(item, index) in ownerFeeRows" :key="index">
+            <text class="fee-cell">{{ item.feeItemName || '-' }}</text>
+            <text class="fee-cell">{{ item.unitPrice ?? '-' }}</text>
+            <text class="fee-cell">{{ item.quantity || '-' }}</text>
+            <text class="fee-cell">{{ item.amount ?? '-' }}</text>
+            <text class="fee-cell">{{ item.remark || '-' }}</text>
+          </view>
+
+          <view v-if="!ownerFeeRows.length" class="empty-inline">暂无费用明细</view>
         </view>
       </SectionCard>
 
@@ -165,7 +188,15 @@ import SectionCard from '@/components/section-card/index.vue'
 import OrderBadge from '@/components/order-badge/index.vue'
 import { requireLogin } from '@/utils/guard'
 import { getDictDataApi } from '@/api'
-import { getMyLogisticsDetailApi } from '@/api/logistics'
+import { getMyLogisticsDetailApi, getAdminLogisticsDetailApi, getFleetLogisticsDetailApi } from '@/api/logistics'
+import { useUserStore } from '@/store/user'
+import { storeToRefs } from 'pinia'
+const userStore = useUserStore()
+const { role } = storeToRefs(userStore)
+
+const isFleet = computed(() => role.value === 'fleet')
+const isAdmin = computed(() => role.value === 'admin')
+const isOwner = computed(() => role.value === 'owner')
 
 const detailId = ref('')
 const detail = ref<any | null>(null)
@@ -240,9 +271,23 @@ const normalizeDetail = (row: any) => {
 
 const loadDetail = async () => {
   try {
-    const res: any = await getMyLogisticsDetailApi(detailId.value)
-    const row = res || null
-    detail.value = row ? normalizeDetail(row) : null
+    if (isFleet.value) {
+      const res: any = await getFleetLogisticsDetailApi(detailId.value)
+      const row = res || null
+      detail.value = row ? normalizeDetail(row) : null
+      return
+
+    } else if (isAdmin.value) {
+      const res: any = await getAdminLogisticsDetailApi(detailId.value)
+      const row = res || null
+      detail.value = row ? normalizeDetail(row) : null
+      return
+    } else {
+      // 默认加载个人端接口
+      const res: any = await getMyLogisticsDetailApi(detailId.value)
+      const row = res || null
+      detail.value = row ? normalizeDetail(row) : null
+    }
   } catch (err) {
     console.error('加载物流单详情失败:', err)
     detail.value = null
@@ -265,8 +310,13 @@ const badgeType = computed(() => {
   return map[String(detail.value?.status || '')] || 'default'
 })
 
-const feeRows = computed(() => {
-  const list = detail.value?.extraFeeList || []
+const fleetFeeRows = computed(() => {
+  const list = detail.value?.extraFeeList.filter((item: { type: string }) => item.type === '2') || []
+  return Array.isArray(list) ? list : []
+})
+
+const ownerFeeRows = computed(() => {
+  const list = detail.value?.extraFeeList.filter((item: { type: string }) => item.type === '1') || []
   return Array.isArray(list) ? list : []
 })
 

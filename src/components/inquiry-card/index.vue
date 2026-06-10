@@ -51,7 +51,7 @@
       </view>
       <view v-if="item.price !== null && item.price !== undefined" class="price-row">
         <text class="price-label">运费</text>
-        <text class="price-value">{{ '¥' }} {{ item.price || '-' }}</text>
+        <text class="price-value">{{ '¥' }} {{ isFleet ? item.costPrice : item.price || '-' }}</text>
       </view>
       <view v-if="isAdmin && item.costPrice" class="price-row">
         <text class="price-label">车队报价</text>
@@ -75,6 +75,7 @@ import { useUserStore } from '@/store/user'
 import { storeToRefs } from 'pinia'
 const userStore = useUserStore()
 const { role } = storeToRefs(userStore)
+const isFleet = computed(() => role.value === 'fleet')
 const isAdmin = computed(() => role.value === 'admin')
 
 type ActionItem = {

@@ -38,7 +38,7 @@
 
       <view class="price-row">
         <text class="price-label">运费</text>
-        <text class="price-value">{{ '¥' }} {{ item.price || '-' }}</text>
+        <text class="price-value">{{ '¥' }} {{ isFleet ? item.costPrice : item.price || '-' }}</text>
       </view>
       <view class="price-row" v-if="isAdmin">
         <text class="price-label">车队报价</text>
