@@ -198,25 +198,25 @@ const normalizeDetail = (row: any) => {
   return {
     ...row,
     orderNo: row.code || `#${row.id}`,
-    createdAt: row.planLoadingTime || '-',
-    fromCity: row.loadingPlace || '-',
-    toCity: row.destination || '-',
-    pickUpPlace: row.pickUpPlace || '-',
-    loadingPlace: row.loadingPlace || '-',
+    createdAt: row.planLoadingTime,
+    fromCity: row.loadingPlace,
+    toCity: row.destination,
+    pickUpPlace: row.pickUpPlace,
+    loadingPlace: row.loadingPlace,
     containerInfo: row.contType
       ? `${row.contType}${row.contNum != null ? ` × ${row.contNum}` : ''}`
       : '-',
-    goodsName: row.detail || row.goodsName || '-',
-    pickupTime: row.pickUpTime || '-',
+    goodsName: row.detail || row.goodsName,
+    pickupTime: row.pickUpTime,
     weight: row.weight != null ? `${row.weight} KGS` : '-',
     remark: row.notice || '',
 
     // 车辆信息
-    driverName: row.driverName || row.driver || '-',
-    idCard: row.idCard || row.idNo || '-',
-    mobile: row.mobile || row.phone || '-',
-    plateNo: row.plateNo || row.carNo || '-',
-    trailerNo: row.trailerNo || row.truckTrailerNo || '-',
+    driverName: row.driverName || row.driver,
+    idCard: row.idCard || row.idNo,
+    mobile: row.mobile || row.phone,
+    plateNo: row.plateNo || row.carNo,
+    trailerNo: row.trailerNo || row.truckTrailerNo,
     trailerWeight:
       row.trailerWeight != null
         ? `${row.trailerWeight}${String(row.trailerWeight).includes('KGS') ? '' : ' KGS'}`
@@ -227,10 +227,10 @@ const normalizeDetail = (row: any) => {
         : '-',
 
     // 箱信息
-    containerNo: row.containerNo || row.boxNo || '-',
-    sealNo: row.sealNo || row.sealNumber || '-',
-    containerPickTime: row.containerPickTime || row.pickContainerTime || '-',
-    arriveTime: row.arriveTime || row.arrivalTime || '-',
+    containerNo: row.containerNo || row.boxNo,
+    sealNo: row.sealNo || row.sealNumber,
+    containerPickTime: row.containerPickTime || row.pickContainerTime,
+    arriveTime: row.arriveTime || row.arrivalTime,
 
     // 费用/照片
     feeList: row.feeList || row.costList || row.fees || [],
@@ -373,7 +373,7 @@ const handleClose = () => {
 }
 
 .summary-item {
-  width: calc(50% - 8rpx);
+  width: calc(50% - 20rpx);
   background: #f8fafc;
   border: 1px solid #edf0f4;
   border-radius: 18rpx;

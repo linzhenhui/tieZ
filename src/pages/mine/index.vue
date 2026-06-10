@@ -19,7 +19,7 @@
       <view v-else class="logged-page">
         <!-- 顶部用户卡 -->
         <view class="profile-banner">
-          <view class="profile-left">
+          <view class="profile-left" @click="goUserDetail">
             <image class="profile-avatar-img" :src="userStore.userInfo?.avatar || defaultAvatar" mode="aspectFill" />
             <view class="profile-info">
               <view class="name">
@@ -166,7 +166,7 @@ const goLoginPage = () => {
 /** 右上角设置 -> 用户详情页 */
 const goUserDetail = () => {
   uni.navigateTo({
-    url: '/pages/mine/detail'
+    url: '/pages/mine/detail?type=profile'
   })
 }
 

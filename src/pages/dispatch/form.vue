@@ -14,12 +14,14 @@
 
           <view class="form-item">
             <text class="label required">联系方式</text>
-            <input v-model="form.phone" class="input" placeholder="请输入联系方式" placeholder-class="placeholder" />
+            <input v-model="form.phone" class="input" type="number" placeholder="请输入联系方式"
+              placeholder-class="placeholder" />
           </view>
 
           <view class="form-item">
             <text class="label required">身份证</text>
-            <input v-model="form.idCard" class="input" placeholder="请输入身份证号" placeholder-class="placeholder" />
+            <input v-model="form.idCard" class="input" type="number" placeholder="请输入身份证号"
+              placeholder-class="placeholder" />
           </view>
 
           <view class="form-item">
@@ -29,17 +31,20 @@
 
           <view class="form-item">
             <text class="label required">车挂号</text>
-            <input v-model="form.trailerNo" class="input" placeholder="请输入车挂号" placeholder-class="placeholder" />
+            <input v-model="form.trailerNo" class="input" type="number" placeholder="请输入车挂号"
+              placeholder-class="placeholder" />
           </view>
 
           <view class="form-item">
             <text class="label required">车挂重</text>
-            <input v-model="form.carWeight" class="input" placeholder="请输入车挂重" placeholder-class="placeholder" />
+            <input v-model="form.carWeight" class="input" type="number" placeholder="请输入车挂重"
+              placeholder-class="placeholder" />
           </view>
 
           <view class="form-item">
             <text class="label required">车长</text>
-            <input v-model="form.carLength" class="input" placeholder="请输入车长" placeholder-class="placeholder" />
+            <input v-model="form.carLength" class="input" type="number" placeholder="请输入车长"
+              placeholder-class="placeholder" />
           </view>
         </view>
 

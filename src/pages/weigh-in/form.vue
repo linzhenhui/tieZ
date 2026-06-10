@@ -54,7 +54,7 @@
           <view class="table-box">
             <view class="table-header">
               <text class="th th-type">费项</text>
-              <text class="th th-amount">金额</text>
+              <text class="th th-unitPrice">金额</text>
               <text class="th th-remark">备注</text>
               <text class="th th-op">操作</text>
             </view>
@@ -64,8 +64,8 @@
                 <text class="cell-text">{{ row.feeItemName || '-' }}</text>
               </view>
 
-              <view class="td td-amount">
-                <text class="cell-text">{{ row.amount || '-' }}</text>
+              <view class="td td-unitPrice">
+                <text class="cell-text">{{ row.unitPrice || '-' }}</text>
               </view>
 
               <view class="td td-remark">
@@ -88,6 +88,7 @@
           {{ logisticsStore.loading ? '提交中...' : '提交' }}
         </button>
       </view>
+
       <view v-if="feeDialogVisible" class="fee-mask" @click="closeFeeDialog">
         <view class="fee-dialog" @click.stop>
           <view class="fee-dialog-title">
@@ -96,13 +97,22 @@
 
           <view class="fee-form-item">
             <text class="fee-label">费用类型</text>
-            <input v-model="feeDialogForm.feeItemName" class="fee-input" placeholder="请输入费用类型"
-              placeholder-class="placeholder" />
+            <picker mode="selector" :range="feeItemNames" :value="feeItemIndex >= 0 ? feeItemIndex : 0"
+              @change="onFeeItemChange">
+              <view class="fee-picker-box">
+                <text :class="['fee-picker-text', !feeDialogForm.feeItemName && 'placeholder']">
+                  {{
+                    feeDialogForm.feeItemName ||
+                    (feeItemLoading ? '正在加载费用类型...' : '请选择费用类型')
+                  }}
+                </text>
+              </view>
+            </picker>
           </view>
 
           <view class="fee-form-item">
             <text class="fee-label">金额</text>
-            <input v-model="feeDialogForm.amount" class="fee-input" type="digit" placeholder="请输入金额"
+            <input v-model="feeDialogForm.unitPrice" class="fee-input" type="digit" placeholder="请输入金额"
               placeholder-class="placeholder" />
           </view>
 
@@ -129,6 +139,7 @@ import PageLayout from '@/components/page-layout/index.vue'
 import UploadImage from '@/components/upload-grid/index.vue'
 import { useLogisticsStore } from '@/store/logistics'
 import { requireLogin } from '@/utils/guard'
+import { getFeeItemApi } from '@/api/logistics'
 
 const logisticsStore = useLogisticsStore()
 const orderId = ref('')
@@ -138,8 +149,9 @@ const form = reactive({
   arriveImg: '',
   arriveOtherImg: [] as string[],
   extraFeeList: [] as {
+    feeItemId: number | string
     feeItemName: string
-    amount: string
+    unitPrice: string
     remark: string
   }[]
 })
@@ -147,6 +159,7 @@ const form = reactive({
 onLoad((options) => {
   if (!requireLogin('/pages/arrive/form')) return
   orderId.value = String(options?.id || '')
+  loadFeeItems()
 })
 
 const onDateChange = (e: any) => {
@@ -162,40 +175,89 @@ const removeOtherPhoto = (index: number) => {
 }
 
 /** =========================
- *  费用弹窗逻辑
- *  ========================= */
+ * 费用弹窗逻辑
+ * ========================= */
 const feeDialogVisible = ref(false)
 const feeDialogMode = ref<'add' | 'edit'>('add')
 const editingFeeIndex = ref(-1)
 
+const feeItemOptions = ref<{ id: number | string; name: string }[]>([])
+const feeItemNames = ref<string[]>([])
+const feeItemIndex = ref(-1)
+const feeItemLoading = ref(false)
+
 const feeDialogForm = reactive({
+  feeItemId: '' as number | string | '',
   feeItemName: '',
-  amount: '',
+  unitPrice: '',
   remark: ''
 })
 
 const resetFeeDialogForm = () => {
+  feeDialogForm.feeItemId = ''
   feeDialogForm.feeItemName = ''
-  feeDialogForm.amount = ''
+  feeDialogForm.unitPrice = ''
   feeDialogForm.remark = ''
   editingFeeIndex.value = -1
+  feeItemIndex.value = -1
 }
 
-const openAddFeeDialog = () => {
+const loadFeeItems = async () => {
+  if (feeItemOptions.value.length || feeItemLoading.value) return
+
+  feeItemLoading.value = true
+  try {
+    const res: any = await getFeeItemApi()
+    const list = Array.isArray(res) ? res : []
+
+    feeItemOptions.value = list
+      .filter((item: any) => item && item.id != null)
+      .map((item: any) => ({
+        id: item.id,
+        name: item.name
+      }))
+
+    feeItemNames.value = feeItemOptions.value.map(item => item.name)
+  } catch (err) {
+    console.error('获取费用类型失败:', err)
+    uni.showToast({ title: '获取费用类型失败', icon: 'none' })
+  } finally {
+    feeItemLoading.value = false
+  }
+}
+
+const onFeeItemChange = (e: any) => {
+  const index = Number(e.detail.value)
+  const item = feeItemOptions.value[index]
+  if (!item) return
+
+  feeItemIndex.value = index
+  feeDialogForm.feeItemId = item.id
+  feeDialogForm.feeItemName = item.name
+}
+
+const openAddFeeDialog = async () => {
   feeDialogMode.value = 'add'
   resetFeeDialogForm()
   feeDialogVisible.value = true
 }
 
-const openEditFeeDialog = (index: number) => {
+const openEditFeeDialog = async (index: number) => {
+
   const row = form.extraFeeList[index]
   if (!row) return
 
   feeDialogMode.value = 'edit'
   editingFeeIndex.value = index
+  feeDialogForm.feeItemId = row.feeItemId || ''
   feeDialogForm.feeItemName = row.feeItemName || ''
-  feeDialogForm.amount = row.amount || ''
+  feeDialogForm.unitPrice = row.unitPrice || ''
   feeDialogForm.remark = row.remark || ''
+
+  feeItemIndex.value = feeItemOptions.value.findIndex(
+    item => String(item.id) === String(row.feeItemId)
+  )
+
   feeDialogVisible.value = true
 }
 
@@ -205,19 +267,25 @@ const closeFeeDialog = () => {
 }
 
 const confirmFeeDialog = () => {
-  if (!feeDialogForm.feeItemName.trim()) {
-    uni.showToast({ title: '请输入费用类型', icon: 'none' })
+  if (!feeDialogForm.feeItemId) {
+    uni.showToast({ title: '请选择费用类型', icon: 'none' })
     return
   }
 
-  if (!feeDialogForm.amount.trim()) {
+  if (!feeDialogForm.feeItemName.trim()) {
+    uni.showToast({ title: '请选择费用类型', icon: 'none' })
+    return
+  }
+
+  if (!feeDialogForm.unitPrice.trim()) {
     uni.showToast({ title: '请输入金额', icon: 'none' })
     return
   }
 
   const newRow = {
+    feeItemId: feeDialogForm.feeItemId,
     feeItemName: feeDialogForm.feeItemName.trim(),
-    amount: feeDialogForm.amount.trim(),
+    unitPrice: feeDialogForm.unitPrice.trim(),
     remark: feeDialogForm.remark.trim()
   }
 
@@ -267,7 +335,7 @@ const handleSubmit = async () => {
   if (!validateForm()) return
 
   const validFees = form.extraFeeList.filter(
-    item => item.feeItemName || item.amount || item.remark
+    item => item.feeItemId || item.feeItemName || item.unitPrice || item.remark
   )
 
   try {
@@ -275,7 +343,12 @@ const handleSubmit = async () => {
       arriveTime: form.arriveTime,
       arriveImg: form.arriveImg,
       arriveOtherImg: form.arriveOtherImg.filter(Boolean).toString(),
-      extraFeeList: validFees
+      extraFeeList: validFees.map(item => ({
+        feeItemId: item.feeItemId,
+        feeItemName: item.feeItemName,
+        unitPrice: item.unitPrice,
+        remark: item.remark
+      }))
     })
 
     uni.showToast({
@@ -397,18 +470,6 @@ const handleSubmit = async () => {
   color: $color-text;
 }
 
-.input {
-  flex: 1;
-  height: 80rpx;
-  border: 1px solid $color-border;
-  border-radius: $radius-sm;
-  background: $color-fill-light;
-  padding: 0 24rpx;
-  box-sizing: border-box;
-  font-size: 28rpx;
-  color: $color-text;
-}
-
 .placeholder {
   color: $color-text-3;
 }
@@ -522,8 +583,8 @@ const handleSubmit = async () => {
   width: 22%;
 }
 
-.th-amount,
-.td-amount {
+.th-unitPrice,
+.td-unitPrice {
   width: 20%;
 }
 
@@ -537,31 +598,10 @@ const handleSubmit = async () => {
   width: 18%;
 }
 
-.cell-picker {
-  width: 100%;
-  min-height: 56rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
 .cell-text {
   font-size: 24rpx;
   color: $color-text;
   text-align: center;
-}
-
-.cell-input {
-  width: 100%;
-  min-height: 56rpx;
-  font-size: 24rpx;
-  color: $color-text;
-  text-align: center;
-}
-
-.remove-link {
-  font-size: 24rpx;
-  color: #ff4d4f;
 }
 
 .submit-btn {
@@ -635,6 +675,23 @@ const handleSubmit = async () => {
   font-size: 26rpx;
   color: $color-text-2;
   margin-bottom: 10rpx;
+}
+
+.fee-picker-box {
+  width: 100%;
+  height: 78rpx;
+  border: 1px solid $color-border;
+  border-radius: 12rpx;
+  background: $color-fill-light;
+  padding: 0 20rpx;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+}
+
+.fee-picker-text {
+  font-size: 28rpx;
+  color: $color-text;
 }
 
 .fee-input {

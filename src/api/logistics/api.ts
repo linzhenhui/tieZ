@@ -110,15 +110,15 @@ export interface ArriveFeeItem {
   feeAmount: string
   feeRemark: string
 }
- 
+
 export interface SubmitArriveParams {
   id: string
   arriveTime: string
   arriveImg: string
   arriveOtherImg?: string
-  fees?: ArriveFeeItem[]
+  extraFeeList?: any[]
 }
- 
+
 /**
  * 物流单落重
  */
@@ -127,5 +127,15 @@ export const submitArriveApi = (data: SubmitArriveParams) => {
     url: '/api/pri/logisticsTruck/truckLogisticsTruck/arrive',
     method: 'POST',
     data
+  })
+}
+
+/**
+ * 获取费用列表
+ */
+export const getFeeItemApi = () => {
+  return request({
+    url: '/api/bsd/getFeeItem',
+    method: 'GET',
   })
 }

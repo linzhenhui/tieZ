@@ -49,9 +49,13 @@
         <text class="label">注意事项</text>
         <text class="value">{{ item.notice }}</text>
       </view>
-      <view  v-if="item.price !== null && item.price !== undefined" class="price-row">
+      <view v-if="item.price !== null && item.price !== undefined" class="price-row">
         <text class="price-label">运费</text>
-        <text class="price-value">{{ item.currency || '¥' }} {{ item.price || '-' }}</text>
+        <text class="price-value">{{ '¥' }} {{ item.price || '-' }}</text>
+      </view>
+      <view v-if="isAdmin && item.costPrice" class="price-row">
+        <text class="price-label">车队报价</text>
+        <text class="price-value">{{ '¥' }} {{ item.costPrice || '-' }}</text>
       </view>
     </view>
 
@@ -67,6 +71,11 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useInquiryStore } from '@/store/inquiry'
+import { useUserStore } from '@/store/user'
+import { storeToRefs } from 'pinia'
+const userStore = useUserStore()
+const { role } = storeToRefs(userStore)
+const isAdmin = computed(() => role.value === 'admin')
 
 type ActionItem = {
   text: string
@@ -91,6 +100,7 @@ type InquiryItem = {
   supplierName?: string
   price?: number | string | null
   currency?: string | null
+  costPrice?: number | string | null
 }
 
 const props = defineProps<{
@@ -261,6 +271,7 @@ const handleAction = (event: ActionItem['event']) => {
   background: #f5f5f5;
   color: $color-text-2;
 }
+
 .price-row {
   margin-top: 18rpx;
   padding: 18rpx 20rpx;
