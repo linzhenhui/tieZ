@@ -100,13 +100,15 @@ import { useUserStore } from '@/store/user'
 import { useInquiryStore } from '@/store/inquiry'
 import { useLogisticsStore } from '@/store/logistics'
 import { onShow, onPullDownRefresh, onReachBottom } from '@dcloudio/uni-app'
-
+import { storeToRefs } from 'pinia'
 const userStore = useUserStore()
+const { role } = storeToRefs(userStore)
+
 
 const defaultAvatar = 'https://img.yzcdn.cn/vant/cat.jpeg'
 
 const defaultUserName = computed(() => {
-  return userStore.role === 'fleet' ? '车队用户' : '货主用户'
+  return role.value === 'fleet' ? '车队用户' : '货主用户'
 })
 
 type TabItem = {
@@ -118,19 +120,16 @@ type TabItem = {
 const inquiryStore = useInquiryStore()
 const logisticsStore = useLogisticsStore()
 
-const isFleet = computed(() => userStore.role === 'fleet')
+const isFleet = computed(() => role.value === 'fleet')
 
 /**
  * 页面显示时初始化
  */
 onShow(async () => {
-  if (!inquiryTabs.value.length) {
-    await inquiryStore.loadStatusTabs()
-  }
-  if (!logisticsTabs.value.length) {
-    await logisticsStore.loadStatusTabs()
-  }
+  console.log("🚀 ~ userStore.isLogin:", userStore.isLogin)
   if (userStore.isLogin) {
+    await inquiryStore.loadStatusTabs()
+    await logisticsStore.loadStatusTabs()
     await inquiryStore.loadInquiryCount()
     await logisticsStore.loadLogisticsCount()
   }
@@ -178,7 +177,7 @@ const goAllInquiry = () => {
 }
 
 const goInquiryList = (status: string) => {
-  inquiryStore.setCurrentStatus( status)
+  inquiryStore.setCurrentStatus(status)
   uni.navigateTo({
     url: `/pages/inquiry/list`
   })
@@ -191,7 +190,7 @@ const goAllLogistics = () => {
 }
 
 const goLogisticsList = (status: string) => {
-  logisticsStore.setCurrentStatus( status)
+  logisticsStore.setCurrentStatus(status)
   uni.navigateTo({
     url: `/pages/logistics/list`
   })

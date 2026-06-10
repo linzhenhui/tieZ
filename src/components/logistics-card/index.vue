@@ -56,9 +56,8 @@ import { computed } from 'vue'
 import OrderBadge from '@/components/order-badge/index.vue'
 import { useUserStore } from '@/store/user'
 import { useLogisticsStore } from '@/store/logistics'
-import type { LogisticsOrder } from '@/api'
-
-type ActionEvent = 'detail' | 'cancel' | 'dispatch' | 'stage'
+import { storeToRefs } from 'pinia'
+type ActionEvent = 'detail' | 'cancel' | 'dispatch' | 'stage' | 'waiting'
 type StageKey = 'box' | 'pickup' | 'weigh'
 
 interface ActionItem {
@@ -70,7 +69,7 @@ interface ActionItem {
 
 const props = withDefaults(
   defineProps<{
-    item: LogisticsOrder
+    item: any
     actions?: ActionItem[]
   }>(),
   {
@@ -82,13 +81,17 @@ const emit = defineEmits<{
   (e: 'detail', id: string | number): void
   (e: 'cancel', id: string | number): void
   (e: 'dispatch', id: string | number): void
+  (e: 'waiting', id: string | number): void
   (e: 'stage', id: string | number, stageKey: StageKey): void
 }>()
 
 const userStore = useUserStore()
 const logisticsStore = useLogisticsStore()
+const { role } = storeToRefs(userStore)
 
-const isOwner = computed(() => userStore.role === 'owner')
+const isFleet = computed(() => role.value === 'fleet')
+const isAdmin = computed(() => role.value === 'admin')
+const isOwner = computed(() => role.value === 'owner')
 
 const statusDictList = computed(() =>
   !isOwner.value
@@ -122,6 +125,20 @@ const badgeType = computed(() => {
   ]
 
   return typeMap[idx] || 'default'
+})
+
+/**
+ * 是否待派单
+ */
+const isWaitingCount = computed(() => {
+  const text = String(statusText.value || '')
+  const raw = String(props.item.status || '')
+  return (
+    text.includes('待派单') ||
+    // text.includes('调度中') ||
+    raw === '0'
+    // raw === '1'
+  )
 })
 
 /**
@@ -189,7 +206,22 @@ const defaultActions = computed<ActionItem[]>(() => {
       }
     ]
   }
-
+  if (isAdmin.value) {
+    if (isWaitingCount.value) {
+      return [
+        {
+          text: '派单',
+          event: 'waiting',
+          type: 'primary'
+        },
+        {
+          text: '详情',
+          event: 'detail',
+          type: 'detail'
+        }
+      ]
+    }
+  }
   // 车队端：调度中
   if (isDispatching.value) {
     return [
@@ -210,15 +242,15 @@ const defaultActions = computed<ActionItem[]>(() => {
   if (isPicking.value) {
     return [
       {
-        text: '详情',
-        event: 'detail',
-        type: 'detail'
-      },
-      {
         text: stageText.value,
         event: 'stage',
         type: 'primary',
         stageKey: stageKey.value
+      },
+      {
+        text: '详情',
+        event: 'detail',
+        type: 'detail'
       }
     ]
   }

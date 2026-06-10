@@ -39,23 +39,20 @@
 
         <view v-else-if="!list.length" class="empty-state">
           <text class="empty-text">暂无报价结果</text>
+          <text class="empty-text">请前往人工询价</text>
         </view>
-
         <view v-else class="quote-list">
           <view v-for="item in list" :key="item.id" class="quote-item">
             <view class="quote-head">
               <view class="price">
                 <text class="price-num">{{ formatPrice(item.price) }}</text>
-                <text class="price-currency">{{ item.currency || 'CNY' }}</text>
               </view>
             </view>
-
             <view class="quote-body">
               <view class="info-row">
                 <text class="info-label">箱型</text>
                 <text class="info-value">{{ item.contType || '-' }}</text>
               </view>
-
               <view class="info-row">
                 <text class="info-label">有效期</text>
                 <text class="info-value">{{ formatDateRange(item.startDate, item.endDate) }}</text>
@@ -63,10 +60,7 @@
             </view>
 
             <view class="quote-foot">
-              <view class="status" :class="statusClass(item.status)">
-                {{ formatStatus(item.status) }}
-              </view>
-
+              <view></view>
               <button class="order-btn" :disabled="orderingId === item.id" @click="handleOrder(item)">
                 {{ orderingId === item.id ? '下单中...' : '下单' }}
               </button>
@@ -76,7 +70,7 @@
       </view>
 
       <view class="actions">
-        <button class="primary-btn" @click="goHome">重新询价</button>
+        <button class="primary-btn" @click="goHome">人工询价</button>
       </view>
     </view>
   </view>
@@ -109,7 +103,6 @@ const loadData = () => {
 
   try {
     const data = uni.getStorageSync('truckQuoteResult') as TruckQuoteStorage | null
-
     if (data && Array.isArray(data.list)) {
       queryInfo.value = data.form || null
       list.value = data.list || []
@@ -137,31 +130,14 @@ const formatDateRange = (start?: string, end?: string) => {
   return start || end || '-'
 }
 
-const formatStatus = (status?: string) => {
-  switch (status) {
-    case '0':
-      return '有效'
-    case '1':
-      return '停用'
-    default:
-      return status || '-'
-  }
-}
-
-const statusClass = (status?: string) => {
-  return {
-    active: status === '0',
-    inactive: status === '1'
-  }
-}
-
 const handleOrder = async (item: TruckQuoteItem) => {
   try {
     orderingId.value = item.id
 
-    const res = await orderTruckApi({
-      id: item.id
+    await orderTruckApi({
+      id: item.id,
     })
+
     uni.showToast({
       title: '下单成功',
       icon: 'success'
@@ -191,7 +167,7 @@ const goBack = () => {
 
 const goHome = () => {
   uni.reLaunch({
-    url: '/pages/home/index'
+    url: '/pages/inquiry/form?formadd=true'
   })
 }
 

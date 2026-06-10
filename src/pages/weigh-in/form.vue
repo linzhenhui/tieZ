@@ -59,17 +59,17 @@
               <text class="th th-op">操作</text>
             </view>
 
-            <view v-for="(row, index) in form.fees" :key="index" class="table-row">
+            <view v-for="(row, index) in form.extraFeeList" :key="index" class="table-row">
               <view class="td td-type">
-                <text class="cell-text">{{ row.feeType || '-' }}</text>
+                <text class="cell-text">{{ row.feeItemName || '-' }}</text>
               </view>
 
               <view class="td td-amount">
-                <text class="cell-text">{{ row.feeAmount || '-' }}</text>
+                <text class="cell-text">{{ row.amount || '-' }}</text>
               </view>
 
               <view class="td td-remark">
-                <text class="cell-text">{{ row.feeRemark || '-' }}</text>
+                <text class="cell-text">{{ row.remark || '-' }}</text>
               </view>
 
               <view class="td td-op">
@@ -78,7 +78,7 @@
               </view>
             </view>
 
-            <view v-if="!form.fees.length" class="empty-row">暂无费用</view>
+            <view v-if="!form.extraFeeList.length" class="empty-row">暂无费用</view>
           </view>
 
           <view class="add-fee-btn" @click="openAddFeeDialog">+ 添加费用</view>
@@ -96,19 +96,19 @@
 
           <view class="fee-form-item">
             <text class="fee-label">费用类型</text>
-            <input v-model="feeDialogForm.feeType" class="fee-input" placeholder="请输入费用类型"
+            <input v-model="feeDialogForm.feeItemName" class="fee-input" placeholder="请输入费用类型"
               placeholder-class="placeholder" />
           </view>
 
           <view class="fee-form-item">
             <text class="fee-label">金额</text>
-            <input v-model="feeDialogForm.feeAmount" class="fee-input" type="digit" placeholder="请输入金额"
+            <input v-model="feeDialogForm.amount" class="fee-input" type="digit" placeholder="请输入金额"
               placeholder-class="placeholder" />
           </view>
 
           <view class="fee-form-item">
             <text class="fee-label">备注</text>
-            <input v-model="feeDialogForm.feeRemark" class="fee-input" placeholder="请输入备注"
+            <input v-model="feeDialogForm.remark" class="fee-input" placeholder="请输入备注"
               placeholder-class="placeholder" />
           </view>
 
@@ -137,10 +137,10 @@ const form = reactive({
   arriveTime: '',
   arriveImg: '',
   arriveOtherImg: [] as string[],
-  fees: [] as {
-    feeType: string
-    feeAmount: string
-    feeRemark: string
+  extraFeeList: [] as {
+    feeItemName: string
+    amount: string
+    remark: string
   }[]
 })
 
@@ -169,15 +169,15 @@ const feeDialogMode = ref<'add' | 'edit'>('add')
 const editingFeeIndex = ref(-1)
 
 const feeDialogForm = reactive({
-  feeType: '',
-  feeAmount: '',
-  feeRemark: ''
+  feeItemName: '',
+  amount: '',
+  remark: ''
 })
 
 const resetFeeDialogForm = () => {
-  feeDialogForm.feeType = ''
-  feeDialogForm.feeAmount = ''
-  feeDialogForm.feeRemark = ''
+  feeDialogForm.feeItemName = ''
+  feeDialogForm.amount = ''
+  feeDialogForm.remark = ''
   editingFeeIndex.value = -1
 }
 
@@ -188,14 +188,14 @@ const openAddFeeDialog = () => {
 }
 
 const openEditFeeDialog = (index: number) => {
-  const row = form.fees[index]
+  const row = form.extraFeeList[index]
   if (!row) return
 
   feeDialogMode.value = 'edit'
   editingFeeIndex.value = index
-  feeDialogForm.feeType = row.feeType || ''
-  feeDialogForm.feeAmount = row.feeAmount || ''
-  feeDialogForm.feeRemark = row.feeRemark || ''
+  feeDialogForm.feeItemName = row.feeItemName || ''
+  feeDialogForm.amount = row.amount || ''
+  feeDialogForm.remark = row.remark || ''
   feeDialogVisible.value = true
 }
 
@@ -205,27 +205,27 @@ const closeFeeDialog = () => {
 }
 
 const confirmFeeDialog = () => {
-  if (!feeDialogForm.feeType.trim()) {
+  if (!feeDialogForm.feeItemName.trim()) {
     uni.showToast({ title: '请输入费用类型', icon: 'none' })
     return
   }
 
-  if (!feeDialogForm.feeAmount.trim()) {
+  if (!feeDialogForm.amount.trim()) {
     uni.showToast({ title: '请输入金额', icon: 'none' })
     return
   }
 
   const newRow = {
-    feeType: feeDialogForm.feeType.trim(),
-    feeAmount: feeDialogForm.feeAmount.trim(),
-    feeRemark: feeDialogForm.feeRemark.trim()
+    feeItemName: feeDialogForm.feeItemName.trim(),
+    amount: feeDialogForm.amount.trim(),
+    remark: feeDialogForm.remark.trim()
   }
 
   if (feeDialogMode.value === 'add') {
-    form.fees.push(newRow)
+    form.extraFeeList.push(newRow)
   } else {
-    if (editingFeeIndex.value < 0 || !form.fees[editingFeeIndex.value]) return
-    form.fees.splice(editingFeeIndex.value, 1, newRow)
+    if (editingFeeIndex.value < 0 || !form.extraFeeList[editingFeeIndex.value]) return
+    form.extraFeeList.splice(editingFeeIndex.value, 1, newRow)
   }
 
   closeFeeDialog()
@@ -237,7 +237,7 @@ const removeFeeRow = (index: number) => {
     content: '确定删除这条费用吗？',
     success: (res) => {
       if (res.confirm) {
-        form.fees.splice(index, 1)
+        form.extraFeeList.splice(index, 1)
       }
     }
   })
@@ -266,8 +266,8 @@ const validateForm = () => {
 const handleSubmit = async () => {
   if (!validateForm()) return
 
-  const validFees = form.fees.filter(
-    item => item.feeType || item.feeAmount || item.feeRemark
+  const validFees = form.extraFeeList.filter(
+    item => item.feeItemName || item.amount || item.remark
   )
 
   try {
@@ -275,7 +275,7 @@ const handleSubmit = async () => {
       arriveTime: form.arriveTime,
       arriveImg: form.arriveImg,
       arriveOtherImg: form.arriveOtherImg.filter(Boolean).toString(),
-      fees: validFees
+      extraFeeList: validFees
     })
 
     uni.showToast({

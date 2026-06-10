@@ -1,5 +1,8 @@
 import { useUserStore } from '@/store/user'
 import { Role } from '@/api'
+import { storeToRefs } from 'pinia'
+const userStore = useUserStore()
+const { role } = storeToRefs(userStore)
 
 let jumpingToLogin = false
 
@@ -7,7 +10,6 @@ export const requireLogin = (
   redirectUrl: string,
   requiredRole?: Role
 ) => {
-  const userStore = useUserStore()
 
   // 未登录
   if (!userStore.isLogin) {
@@ -29,7 +31,7 @@ export const requireLogin = (
   }
 
   // 角色不匹配
-  if (requiredRole && userStore.role !== requiredRole) {
+  if (requiredRole && role.value !== requiredRole) {
     uni.showToast({
       title: '当前账号角色不匹配',
       icon: 'none'

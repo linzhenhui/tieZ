@@ -2,8 +2,8 @@
   <PageLayout currentPath="/pages/home/index" :showTabbar="true">
     <view class="page">
       <view class="hero-banner">
-        <image class="hero-image"
-          src="https://lulian-kunlun.oss-cn-beijing.aliyuncs.com/basicprofile.png" mode="aspectFill" />
+        <image class="hero-image" src="https://lulian-kunlun.oss-cn-beijing.aliyuncs.com/basicprofile.png"
+          mode="aspectFill" />
       </view>
 
       <view class="query-card">
@@ -66,7 +66,7 @@
         <button class="submit-btn" @click="handleSearch">查询报价</button>
       </view>
 
-      <view class="quick-card">
+      <view class="quick-card" v-if="userStore.isLogin">
         <view class="card-title">常用功能</view>
 
         <view class="quick-grid">
@@ -96,7 +96,9 @@ import PageLayout from '@/components/page-layout/index.vue'
 import { searchAddressApi, queryTruckApi, type RegionItem } from '@/api'
 import { onShow } from '@dcloudio/uni-app'
 import { useUserStore } from '@/store/user'
+import { storeToRefs } from 'pinia'
 const userStore = useUserStore()
+const { role } = storeToRefs(userStore)
 
 type FieldKey = 'pickUpPlace' | 'loadingPlace' | 'destination'
 
@@ -130,13 +132,13 @@ const debounceTimers: Record<FieldKey, ReturnType<typeof setTimeout> | null> = {
   loadingPlace: null,
   destination: null
 }
-const noOwner = computed(() => userStore.role !== 'owner')
+const noOwner = computed(() => role.value !== 'owner')
 
 /**
  * 页面显示时初始化
  */
 onShow(async () => {
-  if (noOwner.value) {
+  if (noOwner.value && role.value) {
     uni.redirectTo({ url: '/pages/inquiry/list' })
   }
 })
@@ -196,15 +198,16 @@ const querySuggest = async (field: FieldKey, keyword: string) => {
 }
 
 const selectSuggestion = (field: FieldKey, item: RegionItem) => {
+  console.log("🚀 ~ selectSuggestion ~ item:", item)
   if (field === 'pickUpPlace') {
     form.pickUpPlaceId = String(item.id)
-    form.pickUpPlaceText = item.mername || item.name
+    form.pickUpPlaceText = item.name
   } else if (field === 'loadingPlace') {
     form.loadingPlaceId = String(item.id)
-    form.loadingPlaceText = item.mername || item.name
+    form.loadingPlaceText = item.name
   } else {
     form.destinationId = String(item.id)
-    form.destinationText = item.mername || item.name
+    form.destinationText = item.name
   }
 
   suggestions[field] = []

@@ -28,8 +28,6 @@
           <text class="label required">昵称</text>
           <view class="input-with-btn">
             <input v-model="form.nickName" class="input" placeholder="请输入昵称" placeholder-class="placeholder" />
-
-            <button class="mini-btn" @click="getWechatNickname">微信昵称</button>
           </view>
         </view>
 
@@ -39,37 +37,6 @@
           <input v-model="form.phone" class="input" type="number" maxlength="11" placeholder="请输入手机号"
             placeholder-class="placeholder" />
         </view>
-
-        <!-- 邮箱 -->
-        <view class="form-item">
-          <text class="label">邮箱</text>
-          <input v-model="form.email" class="input" type="text" placeholder="请输入邮箱" placeholder-class="placeholder" />
-        </view>
-
-        <!-- 性别 -->
-        <view class="form-item">
-          <text class="label">性别</text>
-          <picker :range="sexOptions" range-key="label" @change="handleSexChange" class="picker-wrapper">
-            <view class="picker-box">
-              <text :class="['picker-text', !form.sex && 'placeholder']">
-                {{ getSexLabel(form.sex) || '请选择性别' }}
-              </text>
-            </view>
-          </picker>
-        </view>
-
-        <!-- 所属客商 -->
-        <view class="form-item" v-if="showRefIdField">
-          <text class="label">所属客商</text>
-          <picker :range="merchantOptions" range-key="label" @change="handleMerchantChange" class="picker-wrapper">
-            <view class="picker-box">
-              <text :class="['picker-text', !form.refId && 'placeholder']">
-                {{ getMerchantLabel(form.refId) || '请选择所属客商' }}
-              </text>
-            </view>
-          </picker>
-        </view>
-
         <button class="submit-btn" :loading="loading" @click="handleSave">保存</button>
       </view>
     </view>
@@ -86,24 +53,10 @@ import { queryMerchantListApi, getDictDataApi } from '@/api'
 import { uploadUrl } from '@/config/env'
 
 const sexOptions = ref<{ label: string; value: string }[]>([])
-const loadSexOptions = async () => {
-  try {
-    const res: any = await getDictDataApi('sys_user_sex')
-    const list = res || []
-
-    sexOptions.value = list.map((item: any) => ({
-      label: item.dictLabel,
-      value: item.dictValue
-    }))
-  } catch (err) {
-    console.error('获取性别字典失败:', err)
-  }
-}
 const userStore = useUserStore()
 const loading = ref(false)
 
 
-const showRefIdField = ref(true)
 const merchantOptions = ref<{ label: string; value: string }[]>([])
 
 const form = reactive({
@@ -111,9 +64,6 @@ const form = reactive({
   avatar: '',
   nickName: '',
   phone: '',
-  email: '',
-  sex: '',
-  refId: ''
 })
 const avatarUploading = ref(false)
 
@@ -213,6 +163,7 @@ const getWechatNickname = () => {
     desc: '用于完善用户资料',
     success: (res: any) => {
       const nickname = res?.userInfo?.nickName || ''
+      console.log(res.userInfo)
       if (nickname) {
         form.nickName = nickname
         uni.showToast({
@@ -247,65 +198,18 @@ const loadUserInfo = async () => {
   try {
     const res: any = await getUserInfoApi()
     const info = res?.data || res || {}
-
     form.id = info?.id || ''
     form.avatar = info?.avatar || ''
     form.nickName = info?.nickName || info?.userName || ''
     form.phone = info?.phone || info?.phonenumber || ''
-    form.email = info?.email || ''
-    form.sex = info?.sex || ''
-    form.refId = info?.refId || ''
   } catch (err) {
     console.error('获取用户信息失败:', err)
   }
 }
 
-const loadMerchantList = async () => {
-  try {
-    const res: any = await queryMerchantListApi({})
-    const list = res?.data || res || []
-
-    merchantOptions.value = list.map((item: any) => ({
-      label: item.nameCn,
-      value: String(item.id || item.mebId || item.refId || '')
-    }))
-  } catch (err) {
-    console.error('获取客商列表失败:', err)
-  }
-}
-
-const handleSexChange = (e: any) => {
-  const index = Number(e.detail.value)
-  const item = sexOptions.value[index]
-  if (item) {
-    form.sex = item.value
-  }
-}
-const getSexLabel = (value: string) => {
-  const item = sexOptions.value.find(i => i.value === value)
-  return item?.label || ''
-}
-
-const handleMerchantChange = (e: any) => {
-  const index = Number(e.detail.value)
-  const item = merchantOptions.value[index]
-  if (item) {
-    form.refId = item.value
-  }
-}
-
-const getMerchantLabel = (value: string) => {
-  const item = merchantOptions.value.find(i => i.value === value)
-  return item?.label || ''
-}
 
 const validatePhone = (phone: string) => {
   return /^1\d{10}$/.test(phone)
-}
-
-const validateEmail = (email: string) => {
-  if (!email) return true
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
 }
 
 const handleSave = async () => {
@@ -324,11 +228,6 @@ const handleSave = async () => {
     return
   }
 
-  if (!validateEmail(form.email.trim())) {
-    uni.showToast({ title: '邮箱格式不正确', icon: 'none' })
-    return
-  }
-
   try {
     loading.value = true
     uni.showLoading({ title: '保存中...' })
@@ -337,10 +236,7 @@ const handleSave = async () => {
       id: form.id,
       nickName: form.nickName.trim(),
       phone: form.phone.trim(),
-      email: form.email.trim(),
-      sex: form.sex,
       avatar: form.avatar,
-      refId: form.refId
     })
 
     const res: any = await getUserInfoApi()
@@ -351,9 +247,6 @@ const handleSave = async () => {
       avatar: info?.avatar || form.avatar,
       nickName: info?.nickName || form.nickName.trim(),
       phone: info?.phone || info?.phonenumber || form.phone.trim(),
-      email: info?.email || form.email.trim(),
-      sex: info?.sex || form.sex,
-      refId: info?.refId || form.refId
     })
 
     uni.showToast({
@@ -378,8 +271,6 @@ const handleSave = async () => {
 
 onLoad(() => {
   loadUserInfo()
-  loadMerchantList()
-  loadSexOptions()
 })
 </script>
 

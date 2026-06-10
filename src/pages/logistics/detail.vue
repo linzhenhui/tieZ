@@ -18,27 +18,27 @@
         </view>
 
         <view class="summary-grid">
-          <view class="summary-item">
+          <view class="summary-item" v-if="detail.pickUpPlace">
             <text class="summary-label">提箱地</text>
             <text class="summary-value">{{ detail.pickUpPlace }}</text>
           </view>
 
-          <view class="summary-item">
+          <view class="summary-item" v-if="detail.containerInfo">
             <text class="summary-label">箱型箱量</text>
             <text class="summary-value">{{ detail.containerInfo }}</text>
           </view>
 
-          <view class="summary-item">
+          <view class="summary-item" v-if="detail.goodsName">
             <text class="summary-label">品名</text>
             <text class="summary-value">{{ detail.goodsName || '-' }}</text>
           </view>
 
-          <view class="summary-item">
+          <view class="summary-item" v-if="detail.planLoadingTime">
             <text class="summary-label">提货时间</text>
             <text class="summary-value">{{ detail.planLoadingTime || '-' }}</text>
           </view>
 
-          <view class="summary-item">
+          <view class="summary-item" v-if="detail.weight">
             <text class="summary-label">货重</text>
             <text class="summary-value">{{ detail.weight || '-' }}</text>
           </view>
@@ -48,31 +48,31 @@
       <!-- 车辆信息 -->
       <SectionCard title="车辆信息">
         <view class="detail-list">
-          <view class="detail-row">
+          <view class="detail-row" v-if="detail.driverName">
             <text class="label">司机</text>
             <text class="value">{{ detail.driverName || '-' }}</text>
           </view>
-          <view class="detail-row">
+          <view class="detail-row" v-if="detail.idCard">
             <text class="label">身份证</text>
             <text class="value">{{ detail.idCard || '-' }}</text>
           </view>
-          <view class="detail-row">
+          <view class="detail-row" v-if="detail.mobile">
             <text class="label">联系方式</text>
             <text class="value">{{ detail.mobile || '-' }}</text>
           </view>
-          <view class="detail-row">
+          <view class="detail-row" v-if="detail.plateNo">
             <text class="label">车牌号</text>
             <text class="value">{{ detail.plateNo || '-' }}</text>
           </view>
-          <view class="detail-row">
+          <view class="detail-row" v-if="detail.carRegistration">
             <text class="label">车挂号</text>
             <text class="value">{{ detail.carRegistration || '-' }}</text>
           </view>
-          <view class="detail-row">
+          <view class="detail-row" v-if="detail.carWeight">
             <text class="label">车挂重</text>
             <text class="value">{{ detail.carWeight || '-' }}</text>
           </view>
-          <view class="detail-row">
+          <view class="detail-row" v-if="detail.carLength">
             <text class="label">车长</text>
             <text class="value">{{ detail.carLength || '-' }}</text>
           </view>
@@ -82,23 +82,23 @@
       <!-- 箱信息 -->
       <SectionCard title="箱信息">
         <view class="detail-list">
-          <view class="detail-row">
+          <view class="detail-row" v-if="detail.cont">
             <text class="label">箱号</text>
             <text class="value">{{ detail.cont || '-' }}</text>
           </view>
-          <view class="detail-row">
+          <view class="detail-row" v-if="detail.contTitle">
             <text class="label">封号</text>
             <text class="value">{{ detail.contTitle || '-' }}</text>
           </view>
-          <view class="detail-row">
+          <view class="detail-row" v-if="detail.pickUpTime">
             <text class="label">提箱时间</text>
             <text class="value">{{ detail.pickUpTime || '-' }}</text>
           </view>
-          <view class="detail-row">
+          <view class="detail-row" v-if="detail.loadingTime">
             <text class="label">提货时间</text>
             <text class="value">{{ detail.loadingTime || '-' }}</text>
           </view>
-          <view class="detail-row">
+          <view class="detail-row" v-if="detail.arriveTime">
             <text class="label">到达时间</text>
             <text class="value">{{ detail.arriveTime || '-' }}</text>
           </view>
@@ -117,9 +117,9 @@
           </view>
 
           <view class="fee-row" v-for="(item, index) in feeRows" :key="index">
-            <text class="fee-cell">{{ item.name || item.feeName || '-' }}</text>
-            <text class="fee-cell">{{ item.price ?? '-' }}</text>
-            <text class="fee-cell">{{ item.num ?? item.quantity ?? '-' }}</text>
+            <text class="fee-cell">{{ item.feeItemName || '-' }}</text>
+            <text class="fee-cell">{{ item.unitPrice ?? '-' }}</text>
+            <text class="fee-cell">{{ item.quantity || '-' }}</text>
             <text class="fee-cell">{{ item.amount ?? '-' }}</text>
             <text class="fee-cell">{{ item.remark || '-' }}</text>
           </view>
@@ -170,8 +170,6 @@ import { getMyLogisticsDetailApi } from '@/api/logistics'
 const detailId = ref('')
 const detail = ref<any | null>(null)
 const statusDictList = ref<Array<{ dictLabel: string; dictValue: string; dictSort?: number }>>([])
-
-const photoLabels = ['箱底照', '铭牌照', '空箱照', '空箱开门照', '4/1照', '2/1照']
 
 onLoad((options) => {
   if (!requireLogin('/pages/logistics/detail')) return
@@ -268,7 +266,7 @@ const badgeType = computed(() => {
 })
 
 const feeRows = computed(() => {
-  const list = detail.value?.feeList || []
+  const list = detail.value?.extraFeeList || []
   return Array.isArray(list) ? list : []
 })
 

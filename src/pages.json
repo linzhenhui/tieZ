@@ -15,49 +15,73 @@
     {
       "path": "pages/inquiry/form",
       "style": {
-        "navigationBarTitleText": "人工询价"
+        "navigationBarTitleText": "人工询价",
+        "h5": {
+          "navigationStyle": "custom"
+        }
       }
     },
     {
       "path": "pages/inquiry/list",
       "style": {
-        "navigationBarTitleText": "我的询价单"
+        "navigationBarTitleText": "我的询价单",
+        "h5": {
+          "navigationStyle": "custom"
+        }
       }
     },
     {
       "path": "pages/logistics/list",
       "style": {
-        "navigationBarTitleText": "我的物流单"
+        "navigationBarTitleText": "我的物流单",
+        "h5": {
+          "navigationStyle": "custom"
+        }
       }
     },
     {
       "path": "pages/logistics/detail",
       "style": {
-        "navigationBarTitleText": "物流单明细"
+        "navigationBarTitleText": "物流单明细",
+        "h5": {
+          "navigationStyle": "custom"
+        }
       }
     },
     {
       "path": "pages/dispatch/form",
       "style": {
-        "navigationBarTitleText": "调度"
+        "navigationBarTitleText": "调度",
+        "h5": {
+          "navigationStyle": "custom"
+        }
       }
     },
     {
       "path": "pages/pickup-box/form",
       "style": {
-        "navigationBarTitleText": "提箱"
+        "navigationBarTitleText": "提箱",
+        "h5": {
+          "navigationStyle": "custom"
+        }
       }
     },
     {
       "path": "pages/pickup-goods/form",
       "style": {
-        "navigationBarTitleText": "提货"
+        "navigationBarTitleText": "提货",
+        "h5": {
+          "navigationStyle": "custom"
+        }
       }
     },
     {
       "path": "pages/weigh-in/form",
       "style": {
-        "navigationBarTitleText": "落重"
+        "navigationBarTitleText": "落重",
+        "h5": {
+          "navigationStyle": "custom"
+        }
       }
     },
     {
@@ -87,7 +111,10 @@
     {
       "path": "pages/qw/index",
       "style": {
-        "navigationBarTitleText": "企微登录"
+        "navigationBarTitleText": "企微登录",
+        "h5": {
+          "navigationStyle": "custom"
+        }
       }
     }
   ],

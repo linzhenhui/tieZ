@@ -1,12 +1,11 @@
-import { defineStore } from 'pinia'
+import { defineStore, storeToRefs } from 'pinia'
 import type { InquiryFormData, InquiryOrder, InquiryStatus } from '@/api'
 import { mockInquiryList } from '@/utils/mock'
 import { useLogisticsStore } from './logistics'
 import { getDictDataApi, getMyInquiryCountApi, getgmMyLogisticsCountApi, getTruckInquiryCountApi, Role } from '@/api'
 import { useUserStore } from '@/store/user'
 const userStore = useUserStore()
-const role = userStore.role
-
+const { role } = storeToRefs(userStore)
 interface TabItem {
   label: string
   value: string
@@ -14,11 +13,11 @@ interface TabItem {
 }
 
 interface InquiryCountOwner {
-  quotedCount: number
-  cancelCount: number
-  placedCount: number
-  inquiryCount: number
-  ingCount: number
+  quotedCount?: number
+  cancelCount?: number
+  placedCount?: number
+  inquiryCount?: number
+  ingCount?: number
 }
 
 interface InquiryCountFleet {
@@ -79,9 +78,9 @@ const OWNER_COUNT_FIELD_MAP: Record<string, keyof InquiryCountOwner> = {
 
 const FLEET_COUNT_FIELD_MAP: Record<string, keyof InquiryCountFleet> = {
   // 示例：按你的实际字典值修改
-  '0': 'inquiryCount',
-  '1': 'quotedCount',
-  '2': 'cancelCount'
+  '1': 'inquiryCount',
+  '2': 'quotedCount',
+  '3': 'cancelCount'
 }
 const OWNER_QUOTE_TAB_VALUE = '0,1'
 export const useInquiryStore = defineStore('inquiry', {
@@ -116,14 +115,14 @@ export const useInquiryStore = defineStore('inquiry', {
     // 按角色 + 状态值取状态文案
     getStatusLabel: (state) => {
       return (status: string | number) => {
-        const tabs = role !== 'owner' ? state.fleetStatusTabs : state.ownerStatusTabs
-        return tabs.find((item) => String(item.value) === String(status))?.label || '未知状态'
+        const tabs = role.value !== 'owner' ? state.fleetStatusTabs : state.ownerStatusTabs
+        return tabs.find((item) => String(item.value) === String(status))?.label || '报价中'
       }
     },
     // 按角色 + status 值 获取它在字典中的顺序
     getStatusIndex: (state) => {
       return (status: string | number) => {
-        const tabs = role !== 'owner' ? state.fleetStatusTabs : state.ownerStatusTabs
+        const tabs = role.value !== 'owner' ? state.fleetStatusTabs : state.ownerStatusTabs
         return tabs.findIndex((item) => String(item.value) === String(status))
       }
     }
@@ -145,12 +144,13 @@ export const useInquiryStore = defineStore('inquiry', {
      * role:Role
      */
     async loadStatusTabs() {
+      console.log("🚀 ~ role:", role.value)
       const dictKey =
-        role === 'fleet' ? 'pri_inquiry_quote_status' : 'pri_inquiry_status'
+        role.value === 'fleet' ? 'pri_inquiry_quote_status' : 'pri_inquiry_status'
 
       const res: any = await getDictDataApi(dictKey)
       const rows = Array.isArray(res) ? res : res?.data || []
-      if (role === 'owner') {
+      if (role.value === 'owner') {
         const tabs: TabItem[] = []
 
         // 报价中：合并 0 + 1
@@ -195,8 +195,7 @@ export const useInquiryStore = defineStore('inquiry', {
         }
         return tabs
       }
-      console.log("🚀 ~ role:", role)
-      if (role === 'admin') {
+      if (role.value === 'admin') {
         const tabs: TabItem[] = rows
           .map((item: any) => {
             return {
@@ -214,6 +213,9 @@ export const useInquiryStore = defineStore('inquiry', {
       // 车队端：保持原来的字典渲染逻辑
       const tabs: TabItem[] = rows
         .map((item: any) => {
+          if (item.dictValue === '1') {
+            item.dictLabel = '报价中'
+          }
           return {
             label: item.dictLabel,
             value: item.dictValue,
@@ -234,10 +236,9 @@ export const useInquiryStore = defineStore('inquiry', {
      * role:Role
      */
     async loadInquiryCount() {
-      if (role === 'owner') {
+      if (role.value === 'owner') {
         const res: any = await getMyInquiryCountApi()
         const data = res?.data || res || {}
-
         this.ownerInquiryCount = {
           quotedCount: data.quotedCount || 0,
           cancelCount: data.cancelCount || 0,
@@ -245,31 +246,16 @@ export const useInquiryStore = defineStore('inquiry', {
           inquiryCount: data.inquiryCount + data.ingCount || 0,
           ingCount: data.ingCount || 0
         }
-
         this.applyTabsBadge()
-      } else if (role === 'admin') {
+      } else if (role.value === 'admin') {
         const res: any = await getgmMyLogisticsCountApi()
         const data = res?.data || res || {}
-
-        this.fleetInquiryCount = {
-          quotedCount: data.quotedCount || 0,
-          cancelCount: data.cancelCount || 0,
-          placedCount: data.placedCount || 0,
-          inquiryCount: data.inquiryCount || 0,
-          ingCount: data.ingCount || 0
-        }
-
+        this.fleetInquiryCount = data
         this.applyTabsBadge()
       } else {
         const res: any = await getTruckInquiryCountApi()
         const data = res?.data || res || {}
-
-        this.fleetInquiryCount = {
-          quotedCount: data.quotedCount || 0,
-          cancelCount: data.cancelCount || 0,
-          inquiryCount: data.inquiryCount || 0
-        }
-
+        this.fleetInquiryCount = data
         this.applyTabsBadge()
       }
     },
@@ -278,14 +264,14 @@ export const useInquiryStore = defineStore('inquiry', {
      * 把统计数量回填到 tabs.badge
      */
     applyTabsBadge() {
-      if (role === 'owner') {
+      if (role.value === 'owner') {
         this.ownerStatusTabs = this.ownerStatusTabs.map((item) => ({
           ...item,
           badge: this.ownerInquiryCount[
             OWNER_COUNT_FIELD_MAP[item.value] || 'inquiryCount'
           ] || 0
         }))
-      } else if (role === 'admin') {
+      } else if (role.value === 'admin') {
         this.fleetStatusTabs = this.fleetStatusTabs.map((item) => ({
           ...item,
           badge: this.fleetInquiryCount[
@@ -299,6 +285,7 @@ export const useInquiryStore = defineStore('inquiry', {
             FLEET_COUNT_FIELD_MAP[item.value] || 'inquiryCount'
           ] || 0
         }))
+        console.log("🚀 ~ this.fleetStatusTabs:", this.fleetStatusTabs)
       }
     },
 
@@ -312,7 +299,7 @@ export const useInquiryStore = defineStore('inquiry', {
     },
 
     setCurrentStatus(value: string) {
-      if (role !== 'owner') {
+      if (role.value !== 'owner') {
         this.fleetCurrentStatus = value
       } else {
         this.ownerCurrentStatus = value

@@ -2,12 +2,14 @@ import { defineStore } from 'pinia'
 import { computed } from 'vue'
 import { useUserStore } from './user'
 import type { TabbarItem } from '@/api'
+import { storeToRefs } from 'pinia'
 
 export const useTabbarStore = defineStore('tabbar', () => {
   const userStore = useUserStore()
+  const { role } = storeToRefs(userStore)
 
-  const isFleet = computed(() => userStore.role === 'fleet')
-  const isAdmin = computed(() => userStore.role === 'admin')
+  const isFleet = computed(() => role.value === 'fleet')
+  const isAdmin = computed(() => role.value === 'admin')
 
 
   const tabbarList = computed<TabbarItem[]>(() => {

@@ -1,4 +1,4 @@
-import { defineStore } from 'pinia'
+import { defineStore, storeToRefs } from 'pinia'
 import { ref } from 'vue'
 import {
   getDictDataApi, submitPickupGoodsApi,
@@ -8,11 +8,11 @@ import {
   getMyLogisticsCountApi,
   getTruckLogisticsCountApi,
   getgmTruckLogisticsCountApi,
-  type Role
 } from '@/api'
 import { useUserStore } from '@/store/user'
 const userStore = useUserStore()
-const role = userStore.role
+const { role } = storeToRefs(userStore)
+
 
 
 export interface StatusTab {
@@ -90,8 +90,7 @@ export const useLogisticsStore = defineStore('logistics', () => {
    * 只拉字典，不拉统计
    */
   const loadStatusTabs = async () => {
-    if (role === 'owner' && ownerTabsLoaded.value) return
-    if (role !== 'owner' && fleetTabsLoaded.value) return
+    if (ownerTabsLoaded.value) return
 
     const res: any = await getDictDataApi('pri_logistics_status')
     const list = res?.data || res || []
@@ -109,7 +108,7 @@ export const useLogisticsStore = defineStore('logistics', () => {
 
     // 如果两端字典一致，可以共用；如果后续你要分别过滤，也可以这里分别处理
     ownerStatusTabs.value = tabs
-    fleetStatusTabs.value = tabs
+    fleetStatusTabs.value = tabs.slice(1)
 
     ownerStatusDictList.value = dictList
     fleetStatusDictList.value = dictList
@@ -131,7 +130,7 @@ export const useLogisticsStore = defineStore('logistics', () => {
    * 只拉统计数量，不自动触发，由外部决定什么时候调用
    */
   const loadLogisticsCount = async () => {
-    if (role === 'owner') {
+    if (role.value === 'owner') {
       const res: any = await getMyLogisticsCountApi()
       const data = res?.data || res || {}
 
@@ -144,10 +143,9 @@ export const useLogisticsStore = defineStore('logistics', () => {
       }
 
       applyTabsBadge()
-    } else if (role === 'admin') {
+    } else if (role.value === 'admin') {
       const res: any = await getgmTruckLogisticsCountApi()
       const data = res?.data || res || {}
-
       ownerLogisticsCount.value = {
         cancelCount: data.cancelCount || 0,
         dispatchingCount: data.dispatchingCount || 0,
@@ -177,7 +175,7 @@ export const useLogisticsStore = defineStore('logistics', () => {
    * 把统计数量回填到 tabs.badge
    */
   const applyTabsBadge = () => {
-    if (role === 'owner') {
+    if (role.value !== 'fleet') {
       ownerStatusTabs.value = ownerStatusTabs.value.map((item) => ({
         ...item,
         badge:
@@ -206,7 +204,7 @@ export const useLogisticsStore = defineStore('logistics', () => {
   }
 
   const setCurrentStatus = (value: string) => {
-    if (role === 'owner') {
+    if (role.value !== 'fleet') {
       ownerCurrentStatus.value = value
     } else {
       fleetCurrentStatus.value = value

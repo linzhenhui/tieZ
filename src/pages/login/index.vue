@@ -87,7 +87,6 @@
           <view class="input-with-btn">
             <input v-model="wxForm.nickName" class="input" type="nickname" placeholder="请输入昵称"
               placeholder-class="placeholder" />
-            <button class="mini-btn" @click="getWechatNickname">微信昵称</button>
           </view>
         </view>
 
@@ -99,47 +98,8 @@
               <input v-model="wxForm.phone" class="input" type="number" maxlength="11" placeholder="请输入手机号"
                 placeholder-class="placeholder" />
             </view>
-
-            <!-- #ifdef MP-WEIXIN -->
-            <button class="get-phone-btn" open-type="getPhoneNumber" @getphonenumber="onGetPhoneNumber">
-              自动获取
-            </button>
-            <!-- #endif -->
           </view>
         </view>
-
-        <!-- 邮箱 -->
-        <view class="form-item">
-          <text class="label">邮箱</text>
-          <input v-model="wxForm.email" class="input" type="text" placeholder="请输入邮箱" placeholder-class="placeholder" />
-        </view>
-
-        <!-- 性别 -->
-        <view class="form-item">
-          <text class="label">性别</text>
-          <picker :range="sexOptions" range-key="label" :value="sexIndex" @change="handleSexChange"
-            class="picker-wrapper">
-            <view class="picker-box">
-              <text :class="['picker-text', !wxForm.sex && 'placeholder']">
-                {{ getSexLabel(wxForm.sex) || '请选择性别' }}
-              </text>
-            </view>
-          </picker>
-        </view>
-
-        <!-- 所属客商 -->
-        <view class="form-item" v-if="showRefIdField">
-          <text class="label">所属客商</text>
-          <picker :range="merchantOptions" range-key="label" :value="merchantIndex" @change="handleMerchantChange"
-            class="picker-wrapper">
-            <view class="picker-box">
-              <text :class="['picker-text', !wxForm.refId && 'placeholder']">
-                {{ getMerchantLabel(wxForm.refId) || '请选择所属客商' }}
-              </text>
-            </view>
-          </picker>
-        </view>
-
         <button class="submit-btn" :loading="loading" @click="handleShipperWxSubmit">
           提交登录
         </button>
@@ -202,33 +162,22 @@ type OptionItem = {
 }
 
 const mode = ref<LoginMode>('choose')
-const account = ref('wx_pVggsb6VX4')
-const password = ref('123456')
+const account = ref(import.meta.env.VITE_MOCK_CODE ? '微信用户_5437af' : '')
+const password = ref(import.meta.env.VITE_MOCK_CODE ? '123456' : '')
 const loading = ref(false)
 const showPassword = ref(false)
 const tempToken = ref('')
 
-const showRefIdField = ref(true)
 
 const wxForm = reactive({
+  id: '',
   avatar: '',
   nickName: '',
   phone: '',
-  email: '',
-  sex: '',
-  refId: ''
 })
 
-const sexOptions = ref<OptionItem[]>([])
-const merchantOptions = ref<OptionItem[]>([])
 
-const sexIndex = computed(() => {
-  return Math.max(0, sexOptions.value.findIndex(item => item.value === wxForm.sex))
-})
 
-const merchantIndex = computed(() => {
-  return Math.max(0, merchantOptions.value.findIndex(item => item.value === wxForm.refId))
-})
 
 const toggleShowPassword = () => {
   showPassword.value = !showPassword.value
@@ -251,10 +200,6 @@ const validatePhone = (phone: string) => {
   return /^1\d{10}$/.test(phone)
 }
 
-const validateEmail = (email: string) => {
-  if (!email) return true
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
-}
 
 const avatarUploading = ref(false)
 
@@ -348,126 +293,6 @@ const uploadAvatarFile = async (filePath: string) => {
   }
 }
 
-const onGetPhoneNumber = (e: any) => {
-  if (e?.detail?.errMsg !== 'getPhoneNumber:ok') {
-    uni.showToast({
-      title: '未获取到手机号',
-      icon: 'none'
-    })
-    return
-  }
-
-  if (e?.detail?.phoneNumber) {
-    wxForm.phone = e.detail.phoneNumber
-    return
-  }
-
-  if (e?.detail?.code) {
-    uni.showToast({
-      title: '已获取手机号授权码',
-      icon: 'none'
-    })
-  }
-}
-
-/**
- * 微信昵称
- */
-const getWechatNickname = () => {
-  // #ifdef MP-WEIXIN
-  uni.getUserProfile({
-    desc: '用于完善用户资料',
-    success: (res: any) => {
-      const nickname = res?.userInfo?.nickName || ''
-      if (nickname) {
-        wxForm.nickName = nickname
-        uni.showToast({
-          title: '已获取微信昵称',
-          icon: 'none'
-        })
-      } else {
-        uni.showToast({
-          title: '未获取到昵称',
-          icon: 'none'
-        })
-      }
-    },
-    fail: () => {
-      uni.showToast({
-        title: '已取消授权',
-        icon: 'none'
-      })
-    }
-  })
-  // #endif
-
-  // #ifndef MP-WEIXIN
-  uni.showToast({
-    title: '仅微信小程序支持获取微信昵称',
-    icon: 'none'
-  })
-  // #endif
-}
-
-/**
- * 获取性别字典
- */
-const loadSexOptions = async () => {
-  try {
-    const res: any = await getDictDataApi('sys_user_sex')
-    const list = res || []
-
-    sexOptions.value = list.map((item: any) => ({
-      label: item.dictLabel,
-      value: item.dictValue
-    }))
-  } catch (err) {
-    console.error('获取性别字典失败:', err)
-  }
-}
-
-/**
- * 获取客商列表
- */
-const loadMerchantList = async () => {
-  try {
-    const res: any = await queryMerchantListApi({})
-    const list = res?.data || res || []
-
-    merchantOptions.value = list.map((item: any) => ({
-      label: item.nameCn,
-      value: String(item.id || item.mebId || item.refId || '')
-    }))
-  } catch (err) {
-    console.error('获取客商列表失败:', err)
-  }
-}
-
-const handleSexChange = (e: any) => {
-  const index = Number(e.detail.value)
-  const item = sexOptions.value[index]
-  if (item) {
-    wxForm.sex = item.value
-  }
-}
-
-const getSexLabel = (value: string) => {
-  const item = sexOptions.value.find(i => i.value === value)
-  return item?.label || ''
-}
-
-const handleMerchantChange = (e: any) => {
-  const index = Number(e.detail.value)
-  const item = merchantOptions.value[index]
-  if (item) {
-    wxForm.refId = item.value
-  }
-}
-
-const getMerchantLabel = (value: string) => {
-  const item = merchantOptions.value.find(i => i.value === value)
-  return item?.label || ''
-}
 
 /**
  * 判断登录补资料是否完整
@@ -487,9 +312,6 @@ const normalizeUserInfo = (info: any) => {
     avatar: info?.avatar || '',
     nickName: info?.nickName || info?.nickname || info?.userName || '',
     phone: info?.phone || info?.phonenumber || '',
-    email: info?.email || '',
-    sex: info?.sex || '',
-    refId: info?.refId || '',
     realName: info?.realName || ''
   }
 }
@@ -497,16 +319,17 @@ const normalizeUserInfo = (info: any) => {
 /**
  * 微信登录后统一处理
  */
-const afterWxLogin = async (token: string) => {
+const afterWxLogin = async (token: string, role: string) => {
   uni.setStorageSync('token', token)
 
   const res: any = await getUserInfoApi()
   const userInfo = res?.data || res || {}
   const normalized = normalizeUserInfo(userInfo)
+  wxForm.id = userInfo.id
 
   if (isUserInfoComplete(userInfo)) {
     userStore.login({
-      role: 'owner',
+      role: role,
       userInfo: {
         token,
         ...normalized
@@ -527,15 +350,9 @@ const afterWxLogin = async (token: string) => {
 
   tempToken.value = token
   mode.value = 'shipperWxForm'
-
-  loadSexOptions()
-  loadMerchantList()
   wxForm.avatar = normalized.avatar || wxForm.avatar || ''
   wxForm.nickName = normalized.nickName || wxForm.nickName || ''
   wxForm.phone = normalized.phone || wxForm.phone || ''
-  wxForm.email = normalized.email || wxForm.email || ''
-  wxForm.sex = normalized.sex || wxForm.sex || ''
-  wxForm.refId = normalized.refId || wxForm.refId || ''
 }
 
 /**
@@ -582,7 +399,7 @@ const showShipperWxLogin = async () => {
       throw new Error('未获取到 token')
     }
 
-    await afterWxLogin(token)
+    await afterWxLogin(token, 'owner')
   } catch (err: any) {
     console.error('微信登录失败:', err)
     uni.showToast({
@@ -601,14 +418,6 @@ const handleShipperWxSubmit = async () => {
   if (loading.value) return
 
   const token = tempToken.value || uni.getStorageSync('token')
-  if (!token) {
-    uni.showToast({
-      title: '登录状态已失效，请重新登录',
-      icon: 'none'
-    })
-    return
-  }
-
   if (!wxForm.avatar.trim()) {
     uni.showToast({ title: '请上传头像', icon: 'none' })
     return
@@ -628,23 +437,15 @@ const handleShipperWxSubmit = async () => {
     uni.showToast({ title: '手机号格式不正确', icon: 'none' })
     return
   }
-
-  if (!validateEmail(wxForm.email.trim())) {
-    uni.showToast({ title: '邮箱格式不正确', icon: 'none' })
-    return
-  }
-
   loading.value = true
   try {
     await updateUserInfoApi({
+      id: wxForm.id,
       avatar: wxForm.avatar,
       nickName: wxForm.nickName.trim(),
       userName: wxForm.nickName.trim(), // 兼容老字段
       phone: wxForm.phone.trim(),
       phonenumber: wxForm.phone.trim(), // 兼容老字段
-      email: wxForm.email.trim(),
-      sex: wxForm.sex,
-      refId: wxForm.refId
     })
 
     const userRes: any = await getUserInfoApi()
@@ -659,9 +460,6 @@ const handleShipperWxSubmit = async () => {
         avatar: normalized.avatar || wxForm.avatar,
         nickName: normalized.nickName || wxForm.nickName.trim(),
         phone: normalized.phone || wxForm.phone.trim(),
-        email: normalized.email || wxForm.email.trim(),
-        sex: normalized.sex || wxForm.sex,
-        refId: normalized.refId || wxForm.refId
       }
     })
 
@@ -708,24 +506,9 @@ const handleFleetLogin = async () => {
     if (!token) {
       throw new Error('未获取到 token')
     }
+    await afterWxLogin(token, 'fleet')
 
-    userStore.login({
-      role: 'fleet',
-      userInfo: {
-        token
-      }
-    })
 
-    uni.setStorageSync('token', token)
-
-    uni.showToast({
-      title: '登录成功',
-      icon: 'success'
-    })
-
-    setTimeout(() => {
-      uni.redirectTo({ url: getRedirectUrl('/pages/mine/index') })
-    }, 300)
   } catch (err: any) {
     console.error('登录失败:', err)
     uni.showToast({
@@ -736,8 +519,8 @@ const handleFleetLogin = async () => {
     loading.value = false
   }
 }
-const goAdmin =()=>{
-      uni.redirectTo({ url: '/pages/qw/index' })
+const goAdmin = () => {
+  uni.redirectTo({ url: '/pages/qw/index' })
 }
 </script>
 

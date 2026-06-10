@@ -64,12 +64,28 @@ export const queryInquiryListApi = (data: InquiryListQueryParams) => {
     data
   })
 }
-/** 修改询价单详情页 */
+/** 询价单详情页 */
 export const detailInquiryTruckApi = (id: string | number) => {
   return http<BaseResult<null>>({
     url: '/api/pri/inquiryTruck/myInquiryTruck/detail',
     method: 'GET',
     data: { id }
+  })
+}
+/** 企微询价单详情页 */
+export const createOrderApi = (id: string | number) => {
+  return http<BaseResult<null>>({
+    url: '/api/pri/inquiryTruck/createOrder/'+id,
+    method: 'GET',
+  })
+}
+
+/** 建单 */
+export const postCreateOrderApi = (data: any) => {
+  return http<BaseResult<null>>({
+    url: '/api/pri/inquiryTruck/createOrder',
+    method: 'POST',
+    data
   })
 }
 /** 修改询价单 */
@@ -136,5 +152,62 @@ export const cancelTruckInquiryApi = (id: string | number) => {
     url: '/api/pri/inquiryTruck/truckInquiryTruck/cancel',
     method: 'GET',
     data: { id }
+  })
+}
+
+export const queryListApi = () => {
+  return http({
+    url: '/api/meb/queryTruckList',
+    method: 'GET',
+  })
+}
+//询价结果
+export const inquiryTruckQuoteApi = (id: string | number) => {
+  return http({
+    url: '/api/pri/inquiryTruck/inquiryTruckQuote/' + id,
+    method: 'GET',
+  })
+}
+/**
+企微报价
+ 入参{
+ inquiryId：询价单id
+ truckId：车队id
+ priceQuote：报价
+ costPrice：车队价格
+ remark：备注
+ }
+ */
+export const inquiryQuoteApi = (data: {
+  inquiryId: string | number
+  truckId: string | number
+  priceQuote: string
+  costPrice: string
+  remark?: string
+}) => {
+  return http({
+    url: '/api/pri/inquiryTruck/inquiryQuote',
+    method: 'POST',
+    data
+  })
+}
+
+/**
+ * 询价
+ * 入参{
+id：询价单id
+supplierIdList[]：车队id集合
+truckRemark：备注
+}
+ */
+export const inquiryApi = (data: {
+  id: string | number
+  supplierIdList: Array<any>
+  truckRemark?: string
+}) => {
+  return http({
+    url: '/api/pri/inquiryTruck/inquiry',
+    method: 'POST',
+    data
   })
 }

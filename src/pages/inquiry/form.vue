@@ -116,34 +116,98 @@
           </view>
         </view>
 
-        <view class="actions">
+        <view class="actions" v-if="!isAdmin">
           <button class="primary-btn" :loading="submitting" @click="handleInquiry">
             {{ isEditMode ? '保存修改' : '询价' }}
           </button>
         </view>
+        <!-- #ifndef MP-WEIXIN -->
+
+        <!-- 报价费用 -->
+        <view class="form-row">
+          <view class="label">
+            <text class="required">*</text>
+            <text>报价费用</text>
+          </view>
+          <view class="field-inline weight-field">
+            <input class="input" v-model="form.price" type="number" placeholder="请输入报价费用" />
+          </view>
+        </view>
+
+
+        <!-- 车队 -->
+        <view class="form-row">
+          <view class="label">
+            <text class="required">*</text>
+            <text>车队</text>
+          </view>
+
+          <view class="field-inline">
+            <picker class="picker-box" mode="selector" :range="cdOptions" range-key="nameCn" @change="onCdChange">
+              <view class="picker-view">
+                <text v-if="!form.supplierName" class="placeholder-text">请选择车队</text>
+                <text v-else>{{ form.supplierName }}</text>
+              </view>
+            </picker>
+          </view>
+        </view>
+
+        <!-- 车队费用 -->
+        <view class="form-row">
+          <view class="label">
+            <text>车队费用</text>
+          </view>
+          <view class="field">
+            <input class="input" v-model="form.costPrice" placeholder="请输入车队费用" />
+          </view>
+        </view>
+        <!-- 客户单号 -->
+        <view class="form-row">
+          <view class="label">
+            <text>客户单号</text>
+          </view>
+          <view class="field">
+            <input class="input" v-model="form.no" placeholder="请输入客户单号" />
+          </view>
+        </view>
+
+
+        <view class="actions" v-if="isAdmin">
+          <button class="primary-btn" :loading="submitting" @click="handleInquiry">
+            {{ '提交' }}
+          </button>
+        </view>
+
+        <!-- #endif -->
+
       </view>
     </view>
   </PageLayout>
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, onMounted } from 'vue'
-import { onLoad } from '@dcloudio/uni-app'
+import { reactive, ref, onMounted, computed } from 'vue'
+import { onLoad, onShow } from '@dcloudio/uni-app'
 import PageLayout from '@/components/page-layout/index.vue'
-import { editInquiryTruckApi, addManualInquiryApi, getDictDataApi, detailInquiryTruckApi } from '@/api'
-import { useInquiryStore } from '@/store/inquiry'
+import { editInquiryTruckApi, addManualInquiryApi, getDictDataApi, detailInquiryTruckApi, queryListApi, createOrderApi, postCreateOrderApi } from '@/api'
+import { useUserStore } from '@/store/user'
+import { storeToRefs } from 'pinia'
+const userStore = useUserStore()
+const { role } = storeToRefs(userStore)
 
 type DynamicItem = { value: string }
 
-const inquiryStore = useInquiryStore()
+const isAdmin = computed(() => role.value === 'admin')
 
 const submitting = ref(false)
 const contTypeOptions = ref<any[]>([])
+const cdOptions = ref<any[]>([])
 const isEditMode = ref(false)
 const editId = ref('')
 
 const form = reactive({
   id: '',
+  userId: '',
   pickUpPlace: '',
   loadingPlaces: [{ value: '' }] as DynamicItem[],
   destinations: [{ value: '' }] as DynamicItem[],
@@ -154,7 +218,12 @@ const form = reactive({
   cont: '',
   detail: '',
   pickUpTime: '',
-  notice: ''
+  supplierId: '',
+  notice: '',
+  supplierName: '',
+  price: '',
+  costPrice: '',
+  no: ''
 })
 
 const goBack = () => {
@@ -192,6 +261,15 @@ const onContTypeChange = (e: any) => {
   }
 }
 
+const onCdChange = (e: any) => {
+  const index = Number(e.detail.value)
+  const item = cdOptions.value[index]
+  if (item) {
+    form.supplierId = item.id
+    form.supplierName = item.nameCn
+  }
+}
+
 const onDateChange = (e: any) => {
   form.pickUpTime = e.detail.value
 }
@@ -199,12 +277,22 @@ const onDateChange = (e: any) => {
 const loadDict = async () => {
   const data = await getDictDataApi('sys_cnt_type')
   contTypeOptions.value = data || []
-
   // 如果是编辑模式且 contType 已有值，补一下文案
   if (form.contType && !form.contTypeText) {
     const hit = contTypeOptions.value.find((item: any) => item.dictValue === form.contType)
     if (hit) {
       form.contTypeText = hit.dictLabel
+    }
+  }
+}
+
+const loadCd = async () => {
+  const data = await queryListApi()
+  cdOptions.value = data || []
+  if (form.supplierName) {
+    const hit = cdOptions.value.find((item: any) => item.id === form.supplierId)
+    if (hit) {
+      form.supplierName = hit.nameCn
     }
   }
 }
@@ -219,18 +307,22 @@ const splitToList = (val?: string) => {
 
 const fillFormByDetail = (detail: any) => {
   if (!detail) return
-
   form.id = String(detail.id || '')
-  form.pickUpPlace = detail.pickUpPlace || ''
-  form.loadingPlaces = splitToList(detail.loadingPlace).map((item) => ({ value: item }))
-  form.destinations = splitToList(detail.destination).map((item) => ({ value: item }))
-  form.contType = detail.contType || ''
-  form.contNum = detail.contNum != null ? String(detail.contNum) : ''
+  form.userId = String(detail.userId || '')
+  form.pickUpPlace = detail.pickUpPlace || detail.pickUpPlaceText || ''
+  form.loadingPlaces = splitToList(detail.loadingPlace || detail.loadingPlaceText).map((item) => ({ value: item }))
+  form.destinations = splitToList(detail.destination || detail.destinationText).map((item) => ({ value: item }))
+  form.contType = detail.contType || '40HQ'
+  form.contNum = detail.contNum != null ? String(detail.contNum) : '1'
   form.weight = detail.weight != null ? String(detail.weight) : ''
   form.cont = detail.cont || ''
   form.detail = detail.detail || ''
   form.pickUpTime = detail.pickUpTime || ''
+  form.supplierId = detail.supplierId || ''
   form.notice = detail.notice || ''
+  form.supplierName = detail.supplierName || ''
+  form.price = detail.price || ''
+  form.costPrice = detail.costPrice || ''
 
   if (!form.loadingPlaces.length) form.loadingPlaces = [{ value: '' }]
   if (!form.destinations.length) form.destinations = [{ value: '' }]
@@ -244,14 +336,30 @@ const fillFormByDetail = (detail: any) => {
 
 onLoad((options) => {
   const id = String(options?.id || '')
+  const formAdd = String(options?.formadd || '')
   if (id) {
     isEditMode.value = true
     editId.value = id
     form.id = id
-    detailInquiryTruckApi(id).then((res: any) => {
-      const detail = res || null
-      fillFormByDetail(detail)
-    })
+    if (isAdmin.value) {
+      createOrderApi(id).then((res: any) => {
+        const detail = res || null
+        fillFormByDetail(detail)
+      })
+      uni.setNavigationBarTitle({
+        title: '建单'
+      })
+    } else {
+      detailInquiryTruckApi(id).then((res: any) => {
+        const detail = res || null
+        fillFormByDetail(detail)
+      })
+    }
+  }
+  if (formAdd) {
+    const { form } = uni.getStorageSync('truckQuoteResult')
+    fillFormByDetail(form)
+
   }
 })
 
@@ -303,6 +411,7 @@ const handleInquiry = async () => {
     submitting.value = true
 
     const payload = {
+      ...form,
       id: form.id || '',
       pickUpPlace: form.pickUpPlace.trim(),
       loadingPlace: form.loadingPlaces.map(i => i.value.trim()).filter(Boolean).join(','),
@@ -315,23 +424,30 @@ const handleInquiry = async () => {
       pickUpTime: form.pickUpTime,
       notice: form.notice.trim()
     }
-
-    if (isEditMode.value) {
-      await editInquiryTruckApi(payload)
+    if (isAdmin.value) {
+      await postCreateOrderApi(payload)
       uni.showToast({
-        title: '修改成功',
+        title: '建单成功',
         icon: 'success'
       })
     } else {
-      await addManualInquiryApi(payload)
-      uni.showToast({
-        title: '询价成功',
-        icon: 'success'
-      })
+      if (isEditMode.value) {
+        await editInquiryTruckApi(payload)
+        uni.showToast({
+          title: '修改成功',
+          icon: 'success'
+        })
+      } else {
+        await addManualInquiryApi(payload)
+        uni.showToast({
+          title: '询价成功',
+          icon: 'success'
+        })
+      }
     }
 
     setTimeout(() => {
-      if (isEditMode.value) {
+      if (isEditMode.value || isAdmin.value) {
         // 编辑成功后返回上一页
         uni.navigateBack()
         return
@@ -343,8 +459,11 @@ const handleInquiry = async () => {
   }
 }
 
-onMounted(() => {
-  loadDict()
+onShow(() => {
+  if (userStore.isLogin) {
+    loadDict()
+    loadCd()
+  }
 })
 </script>
 

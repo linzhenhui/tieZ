@@ -4,17 +4,9 @@
       <StatusTabs v-model="currentStatus" :list="tabList" />
 
       <template v-if="list.length">
-        <InquiryCard
-          v-for="item in list"
-          :key="item.id"
-          :item="item"
-          :actions="getActions(item.status)"
-          @edit="handleEdit"
-          @cancel="handleCancel"
-          @confirm="handleConfirm"
-          @quote="openQuotePopup"
-          @askprice="openAskpricePopup"
-        />
+        <InquiryCard v-for="item in list" :key="item.id" :item="item" :actions="getActions(item.status)"
+          @edit="handleEdit" @cancel="handleCancel" @confirm="handleConfirm" @quote="openQuotePopup"
+          @askprice="openAskpricePopup" />
       </template>
 
       <EmptyState v-else text="暂无询价单数据" />
@@ -23,24 +15,8 @@
       <view v-else-if="finished && list.length" class="loading-text">没有更多了</view>
 
       <!-- 报价弹窗 -->
-      <view v-if="showQuotePopup" class="popup-mask" @click="closeQuotePopup">
-        <view class="popup-card" @click.stop>
-          <view class="popup-title">输入报价</view>
-          <input
-            v-model="quotePrice"
-            class="popup-input"
-            type="digit"
-            placeholder="请输入报价金额"
-            confirm-type="done"
-            @confirm="submitQuote"
-          />
-          <view class="popup-actions">
-            <button class="popup-btn cancel" @click="closeQuotePopup">取消</button>
-            <button class="popup-btn confirm" :loading="quoteLoading" @click="submitQuote">确认</button>
-          </view>
-        </view>
-      </view>
-
+      <QuotePopup v-model="showQuotePopup" title="车队报价结果" :quotedTeamList="teamList" :allTeamList="cdOptions"
+        :isAdmin="isAdmin" @submit="submitQuote" />
       <!-- 询价弹窗 -->
       <view v-if="showAskPopup" class="popup-mask" @click="closeAskPopup">
         <view class="popup-card" @click.stop>
@@ -51,10 +27,18 @@
               <text>车队：</text>
             </view>
             <view class="field-inline">
-              <view class="multi-select-box" @click="showContTypeList = true">
+              <view class="multi-select-box" @click="openContTypeList">
                 <text v-if="!form.contTypeText" class="placeholder-text">请选择车队</text>
                 <text v-else>{{ form.contTypeText }}</text>
               </view>
+            </view>
+          </view>
+          <view class="form-row">
+            <view class="label">
+              <text>注意事项：</text>
+            </view>
+            <view class="field-inline">
+              <textarea v-model="form.quoteRemark" class="form-textarea" placeholder="请输入报价备注" />
             </view>
           </view>
 
@@ -65,24 +49,26 @@
         </view>
       </view>
 
-      <!-- 箱型多选弹层 -->
+      <!-- 车队多选弹层 -->
       <view v-if="showContTypeList" class="select-mask" @click="showContTypeList = false">
         <view class="select-card" @click.stop>
           <view class="select-title">选择车队</view>
 
-          <checkbox-group @change="onContTypeChange">
-            <label
-              v-for="item in contTypeOptions"
-              :key="item.dictValue"
-              class="checkbox-item"
-            >
-              <checkbox
-                :value="String(item.dictValue)"
-                :checked="form.contType.includes(item.dictValue)"
-              />
-              <text>{{ item.dictLabel }}</text>
-            </label>
-          </checkbox-group>
+          <!-- 搜索框 -->
+          <view class="select-search">
+            <input v-model="teamKeyword" class="search-input" placeholder="请输入车队名称筛选"
+              placeholder-class="search-placeholder" confirm-type="search" />
+            <text v-if="teamKeyword" class="search-clear" @click="clearTeamKeyword">清除</text>
+          </view>
+          <view class="scroll-view">
+            <checkbox-group @change="onContTypeChange">
+              <label v-for="item in filteredCdOptions" :key="item.id" class="checkbox-item">
+                <checkbox :value="item.id" :checked="form.contType.includes(item.id)" />
+                <text>{{ item.nameCn }}</text>
+              </label>
+            </checkbox-group>
+          </view>
+
 
           <view class="popup-actions">
             <button class="popup-btn cancel" @click="showContTypeList = false">取消</button>
@@ -103,6 +89,7 @@ import InquiryCard from '@/components/inquiry-card/index.vue'
 import EmptyState from '@/components/empty-state/index.vue'
 import { useInquiryStore } from '@/store/inquiry'
 import { useUserStore } from '@/store/user'
+import QuotePopup from '@/components/QuotePopup/index.vue'
 import {
   queryInquiryListApi,
   querygmTruckInquiryListApi,
@@ -110,19 +97,22 @@ import {
   queryTruckInquiryListApi,
   truckInquiryQuoteApi,
   cancelTruckInquiryApi,
-  confirmInquiryTruckApi
+  confirmInquiryTruckApi,
+  queryListApi,
+  inquiryTruckQuoteApi,
+  inquiryQuoteApi,
+  inquiryApi
 } from '@/api'
 import { requireLogin } from '@/utils/guard'
-
-type InquiryStatus = string
-
-const inquiryStore = useInquiryStore()
+import { storeToRefs } from 'pinia'
 const userStore = useUserStore()
+const { role } = storeToRefs(userStore)
+type InquiryStatus = string
+const inquiryStore = useInquiryStore()
 
-const isFleet = computed(() => userStore.role === 'fleet')
-const isAdmin = computed(() => userStore.role === 'admin')
-const isOwner = computed(() => userStore.role === 'owner')
-
+const isFleet = computed(() => role.value === 'fleet')
+const isAdmin = computed(() => role.value === 'admin')
+const isOwner = computed(() => role.value === 'owner')
 /**
  * 直接从 store 读取 tabList
  */
@@ -130,9 +120,6 @@ const tabList = computed(() =>
   !isOwner.value ? inquiryStore.fleetStatusTabs : inquiryStore.ownerStatusTabs
 )
 
-/**
- * currentStatus 也放到 store 中
- */
 const currentStatus = computed({
   get() {
     return !isOwner.value
@@ -143,7 +130,7 @@ const currentStatus = computed({
     inquiryStore.setCurrentStatus(val)
   }
 })
-
+const teamList = ref<any[]>([])
 const list = ref<any[]>([])
 const total = ref(0)
 const pageNum = ref(1)
@@ -155,7 +142,6 @@ const finished = ref(false)
 
 const showQuotePopup = ref(false)
 const showAskPopup = ref(false)
-const quotePrice = ref('')
 const currentQuoteId = ref<string | number>('')
 const quoteLoading = ref(false)
 const askLoading = ref(false)
@@ -163,18 +149,34 @@ const askLoading = ref(false)
 const pageReady = ref(false)
 
 const showContTypeList = ref(false)
-const contTypeOptions = ref([
-  { dictValue: '20GP', dictLabel: '20GP' },
-  { dictValue: '40GP', dictLabel: '40GP' },
-  { dictValue: '40HQ', dictLabel: '40HQ' }
-])
+const cdOptions = ref<any[]>([])
+const teamKeyword = ref('')
+const filteredCdOptions = computed(() => {
+  const keyword = teamKeyword.value.trim().toLowerCase()
+  if (!keyword) return cdOptions.value
 
+  return cdOptions.value.filter((item) => {
+    const name = (item.nameCn || '').toLowerCase()
+    return name.includes(keyword)
+  })
+})
+const clearTeamKeyword = () => {
+  teamKeyword.value = ''
+}
 const form = reactive({
   id: '',
   contType: [] as string[],
-  contTypeText: ''
+  contTypeText: '',
+  quoteRemark: ''
 })
-
+const loadQuotedTeams = async (id: any) => {
+  try {
+    const data = await inquiryTruckQuoteApi(id)
+    teamList.value = data || []
+  } catch (e) {
+    teamList.value = []
+  }
+}
 /**
  * 列表接口根据角色切换
  */
@@ -272,7 +274,7 @@ watch(currentStatus, async () => {
 onShow(async () => {
   if (!requireLogin('/pages/inquiry/list')) return
 
-  if (!tabList.value.length) {
+  if (!tabList.value.length && role.value) {
     await loadTabs()
   }
 
@@ -282,6 +284,7 @@ onShow(async () => {
 
   pageReady.value = true
   await loadList(true)
+  loadDict()
 })
 
 /**
@@ -300,22 +303,20 @@ onReachBottom(async () => {
   }
 })
 
-/**
- * 动作按钮
- */
 const getActions = (status: InquiryStatus) => {
   if (isAdmin.value) {
     if (status === '0' || status === '1') {
       return [
-        { text: '询价', event: 'askprice', type: 'primary' },
         { text: '报价', event: 'quote', type: 'primary' },
+        { text: '询价', event: 'askprice', type: 'primary' },
+        { text: '建单', event: 'edit', type: 'primary' },
         { text: '取消', event: 'cancel', type: 'warn' }
       ]
     }
     if (status === '2') {
       return [
-        { text: '取消', event: 'cancel', type: 'warn' },
-        { text: '取消', event: 'cancel', type: 'warn' }
+        { text: '建单', event: 'edit', type: 'primary' },
+        { text: '确认', event: 'confirm', type: 'success' },
       ]
     }
     return []
@@ -388,16 +389,15 @@ const handleConfirm = async (id: string | number) => {
   await loadList(true)
 }
 
-const openQuotePopup = (id: string | number) => {
+const openQuotePopup = async (id: string | number) => {
+  await loadQuotedTeams(id)
   currentQuoteId.value = id
-  quotePrice.value = ''
   showQuotePopup.value = true
 }
 
 const closeQuotePopup = () => {
   showQuotePopup.value = false
   currentQuoteId.value = ''
-  quotePrice.value = ''
 }
 
 const openAskpricePopup = (id: string) => {
@@ -418,20 +418,28 @@ const closeAskPopup = () => {
 const onContTypeChange = (e: any) => {
   form.contType = e.detail.value
 }
-
+const openContTypeList = () => {
+  teamKeyword.value = ''
+  showContTypeList.value = true
+}
 const confirmContType = () => {
+  console.log("🚀 ~ confirmContType ~ form.contType:", form.contType)
   form.contTypeText = form.contType
-    .map(v => contTypeOptions.value.find(item => item.dictValue === v)?.dictLabel)
+    .map(v => cdOptions.value.find(item => item.id === v)?.nameCn)
     .filter(Boolean)
     .join('、')
 
   showContTypeList.value = false
 }
+const loadDict = async () => {
+  const data = await queryListApi()
+  cdOptions.value = data || []
+}
 
 const submitAskprice = async () => {
   if (!form.contType.length) {
     uni.showToast({
-      title: '请选择箱型',
+      title: '请选择车队',
       icon: 'none'
     })
     return
@@ -441,27 +449,23 @@ const submitAskprice = async () => {
   askLoading.value = true
 
   try {
-    /**
-     * 这里替换成你自己的“询价”接口
-     * 例如：
-     * await askPriceApi({
-     *   id: form.id,
-     *   contType: form.contType.join(','),
-     * })
-     */
-
     console.log('询价参数：', {
       id: form.id,
       contType: form.contType.join(','),
       contTypeText: form.contTypeText
     })
-
+    await inquiryApi({
+      id: form.id,
+      supplierIdList: form.contType,
+      truckRemark: form.quoteRemark
+    })
     uni.showToast({
       title: '询价成功',
       icon: 'success'
     })
 
     closeAskPopup()
+    await loadList(true)
   } catch (err: any) {
     uni.showToast({
       title: err?.message || '询价失败',
@@ -472,32 +476,28 @@ const submitAskprice = async () => {
   }
 }
 
-const submitQuote = async () => {
-  if (!isFleet.value) {
-    uni.showToast({
-      title: '只有车队用户可以报价',
-      icon: 'none'
-    })
-    return
-  }
-
-  if (!quotePrice.value) {
-    uni.showToast({
-      title: '请输入报价',
-      icon: 'none'
-    })
-    return
-  }
-
+const submitQuote = async (data?: any) => {
+  console.log("🚀 ~ submitQuote ~ data:", data)
   if (quoteLoading.value) return
   quoteLoading.value = true
 
   try {
-    await truckInquiryQuoteApi({
-      id: currentQuoteId.value,
-      price: quotePrice.value,
-      remark: ''
-    })
+    if (isFleet.value) {
+      await truckInquiryQuoteApi({
+        id: currentQuoteId.value,
+        price: data.priceQuote,
+        remark: data.quoteRemark
+      })
+    }
+    if (isAdmin.value) {
+      await inquiryQuoteApi({
+        inquiryId: currentQuoteId.value,
+        truckId: data.truckId,
+        priceQuote: data.priceQuote,
+        costPrice: data.teamPrice,
+        remark: data.quoteRemark
+      })
+    }
 
     uni.showToast({
       title: '报价成功',
@@ -551,7 +551,7 @@ const submitQuote = async () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 9999;
+  z-index: 999;
 }
 
 .popup-card {
@@ -682,6 +682,11 @@ const submitQuote = async () => {
   box-shadow: $shadow-popup;
 }
 
+.scroll-view {
+  max-height: 400rpx;
+  overflow-y: auto;
+}
+
 .select-title {
   text-align: center;
   font-size: 32rpx;
@@ -695,5 +700,43 @@ const submitQuote = async () => {
   gap: 16rpx;
   padding: 18rpx 0;
   border-bottom: 1px solid #f2f2f2;
+}
+
+.form-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1rpx solid #dcdcdc;
+  border-radius: 14rpx;
+  background: #fff;
+  font-size: 28rpx;
+  color: #222;
+}
+
+.select-search {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  margin-bottom: 20rpx;
+}
+
+.search-input {
+  flex: 1;
+  height: 72rpx;
+  padding: 0 24rpx;
+  border: 1rpx solid #e5e5e5;
+  border-radius: 12rpx;
+  background: #fff;
+  font-size: 28rpx;
+  box-sizing: border-box;
+}
+
+.search-placeholder {
+  color: #999;
+}
+
+.search-clear {
+  color: #1677ff;
+  font-size: 26rpx;
+  white-space: nowrap;
 }
 </style>
