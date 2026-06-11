@@ -1,17 +1,23 @@
 <template>
   <view class="tabs" :class="{ sticky: sticky }" :style="stickyStyle">
-    <scroll-view scroll-x class="tabs-scroll" :show-scrollbar="false">
-      <view class="tabs-row">
-        <view v-for="item in list" :key="item.value" class="tab-item" :class="{ active: modelValue === item.value }"
-          @click="selectTab(item.value)">
-          <text class="tab-label">{{ item.label }}</text>
+    <view class="tabs-inner">
+      <scroll-view scroll-x class="tabs-scroll" :show-scrollbar="false">
+        <view class="tabs-row">
+          <view v-for="item in list" :key="item.value" class="tab-item" :class="{ active: modelValue === item.value }"
+            @click="selectTab(item.value)">
+            <text class="tab-label">{{ item.label }}</text>
 
-          <view v-if="item.badge !== undefined" class="badge">
-            <text class="badge-text">{{ item.badge }}</text>
+            <view v-if="item.badge !== undefined" class="badge">
+              <text class="badge-text">{{ item.badge }}</text>
+            </view>
           </view>
         </view>
+      </scroll-view>
+
+      <view v-if="$slots.right" class="tabs-right">
+        <slot name="right"></slot>
       </view>
-    </scroll-view>
+    </view>
   </view>
 </template>
 
@@ -64,43 +70,49 @@ const stickyStyle = computed(() => {
   width: 100%;
   margin-bottom: 20rpx;
   background: #fff;
-  border-radius: $radius-md;
-  padding: 16rpx 0;
+  border-radius: 24rpx;
+  padding: 16rpx 12rpx 10rpx;
+  box-sizing: border-box;
 }
 
-.sticky {
-  box-shadow: 0 8rpx 20rpx rgba(0, 0, 0, 0.04);
+.tabs-inner {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
 }
 
 .tabs-scroll {
+  flex: 1;
+  width: 0;
   white-space: nowrap;
 }
 
 .tabs-row {
   display: flex;
   align-items: center;
-  padding: 0 20rpx;
-  gap: 16rpx;
+  gap: 10rpx;
+  padding-top: 6rpx;
 }
 
 .tab-item {
   position: relative;
   flex-shrink: 0;
-  height: 68rpx;
-  padding: 0 28rpx;
-  padding-right: 44rpx; // 给角标留点空间
+  height: 64rpx;
+  padding: 0 24rpx;
+  padding-right: 42rpx;
   border-radius: 999rpx;
-  background: $color-fill-light;
-  color: $color-text-2;
+  background: #f4f6fa;
+  color: #5b6472;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 26rpx;
+  box-sizing: border-box;
 }
 
 .badge {
   position: absolute;
-  top: 0;
+  top: -6rpx;
   right: -6rpx;
   min-width: 30rpx;
   height: 30rpx;
@@ -113,22 +125,22 @@ const stickyStyle = computed(() => {
   justify-content: center;
   box-sizing: border-box;
   z-index: 2;
-  transform: scale(0.95);
+}
+
+.tab-item.active {
+  background: #2a7fff;
+  color: #fff;
+  font-weight: 600;
+  box-shadow: 0 6rpx 14rpx rgba(42, 127, 255, 0.18);
+}
+
+.tab-label {
+  line-height: 1;
 }
 
 .badge-text {
   font-size: 18rpx;
   line-height: 1;
   transform: translateY(-1rpx);
-}
-
-.tab-item.active {
-  background: $color-primary;
-  color: #fff;
-  font-weight: 600;
-}
-
-.tab-label {
-  line-height: 1;
 }
 </style>

@@ -22,11 +22,6 @@
       </view>
 
       <view class="info-row">
-        <text class="label">品名</text>
-        <text class="value">{{ item.goodsName || '-' }}</text>
-      </view>
-
-      <view class="info-row">
         <text class="label">提货时间</text>
         <text class="value">{{ item.pickupTime || '-' }}</text>
       </view>
@@ -34,6 +29,11 @@
       <view class="info-row">
         <text class="label">货重</text>
         <text class="value">{{ item.weight || '-' }}</text>
+      </view>
+
+      <view class="info-row">
+        <text class="label">品名</text>
+        <text class="value">{{ item.goodsName || '-' }}</text>
       </view>
 
       <view class="price-row">

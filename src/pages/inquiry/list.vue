@@ -1,8 +1,14 @@
 <template>
   <PageLayout :currentPath="'/pages/inquiry/list'" :showTabbar="true">
     <view class="page">
-      <StatusTabs v-model="currentStatus" :list="tabList" />
-
+      <StatusTabs v-model="currentStatus" :list="tabList">
+        <template #right>
+          <view class="filter-btn" @click="showFilterPanel = true">
+            <text class="filter-icon">⚲</text>
+            <text class="filter-text">筛选</text>
+          </view>
+        </template>
+      </StatusTabs>
       <template v-if="list.length">
         <InquiryCard v-for="item in list" :key="item.id" :item="item" :actions="getActions(item.status)"
           @edit="handleEdit" @cancel="handleCancel" @confirm="handleConfirm" @quote="openQuotePopup"
@@ -76,6 +82,63 @@
           </view>
         </view>
       </view>
+      <!-- 筛选面板 -->
+      <view v-if="showFilterPanel" class="filter-mask" @click="closeFilterPanel">
+        <view class="filter-card" @click.stop>
+          <view class="filter-title">筛选</view>
+
+          <view class="filter-item row-item">
+            <text class="filter-label">单号</text>
+            <input v-model="filterForm.orderNo" class="filter-input" placeholder="请输入单号"
+              placeholder-class="filter-placeholder" />
+          </view>
+          <view class="filter-item row-item">
+            <text class="filter-label">提货时间</text>
+
+            <view class="date-range">
+              <picker mode="date" :value="filterForm.pickupStartTime" @change="onPickupStartChange">
+                <view class="filter-input date-box">
+                  <text :class="filterForm.pickupStartTime ? 'filter-value' : 'filter-placeholder'">
+                    {{ filterForm.pickupStartTime || '开始日期' }}
+                  </text>
+                </view>
+              </picker>
+
+              <text class="date-separator">-</text>
+
+              <picker mode="date" :value="filterForm.pickupEndTime" @change="onPickupEndChange">
+                <view class="filter-input date-box">
+                  <text :class="filterForm.pickupEndTime ? 'filter-value' : 'filter-placeholder'">
+                    {{ filterForm.pickupEndTime || '结束日期' }}
+                  </text>
+                </view>
+              </picker>
+            </view>
+          </view>
+          <view class="filter-item row-item">
+            <text class="filter-label">装箱地</text>
+            <input v-model="filterForm.loadingPlace" class="filter-input" placeholder="请输入装箱地"
+              placeholder-class="filter-placeholder" />
+          </view>
+
+          <view class="filter-item row-item">
+            <text class="filter-label">目的地</text>
+            <input v-model="filterForm.destination" class="filter-input" placeholder="请输入目的地"
+              placeholder-class="filter-placeholder" />
+          </view>
+
+          <view class="filter-item row-item">
+            <text class="filter-label">提箱地</text>
+            <input v-model="filterForm.containerPlace" class="filter-input" placeholder="请输入提箱地"
+              placeholder-class="filter-placeholder" />
+          </view>
+
+          <view class="popup-actions">
+            <button class="popup-btn cancel" @click="resetFilter">重置</button>
+            <button class="popup-btn confirm" @click="applyFilter">查询</button>
+          </view>
+        </view>
+      </view>
     </view>
   </PageLayout>
 </template>
@@ -109,10 +172,63 @@ const userStore = useUserStore()
 const { role } = storeToRefs(userStore)
 type InquiryStatus = string
 const inquiryStore = useInquiryStore()
-
 const isFleet = computed(() => role.value === 'fleet')
 const isAdmin = computed(() => role.value === 'admin')
 const isOwner = computed(() => role.value === 'owner')
+const showFilterPanel = ref(false)
+const filterForm = reactive({
+  pickupStartTime: '',
+  pickupEndTime: '',
+  orderNo: '',
+  loadingPlace: '',
+  destination: '',
+  containerPlace: ''
+})
+
+const closeFilterPanel = () => {
+  showFilterPanel.value = false
+}
+
+const onPickupStartChange = (e: any) => {
+  filterForm.pickupStartTime = e.detail.value
+}
+
+const onPickupEndChange = (e: any) => {
+  filterForm.pickupEndTime = e.detail.value
+}
+
+const resetFilter = async () => {
+  filterForm.pickupStartTime = ''
+  filterForm.pickupEndTime = ''
+  filterForm.orderNo = ''
+  filterForm.loadingPlace = ''
+  filterForm.destination = ''
+  filterForm.containerPlace = ''
+  showFilterPanel.value = false
+  await loadList(true)
+}
+
+const applyFilter = async () => {
+  showFilterPanel.value = false
+  await loadList(true)
+}
+
+const buildListParams = () => {
+  const params: Record<string, any> = {
+    pageNum: pageNum.value,
+    pageSize: pageSize.value
+  }
+
+  // 这里字段名按你的后端接口改
+  if (filterForm.pickupStartTime) params.pickupStartTime = filterForm.pickupStartTime
+  if (filterForm.pickupEndTime) params.pickupEndTime = filterForm.pickupEndTime
+  if (filterForm.orderNo) params.orderNo = filterForm.orderNo
+  if (filterForm.loadingPlace) params.loadingPlace = filterForm.loadingPlace
+  if (filterForm.destination) params.destination = filterForm.destination
+  if (filterForm.containerPlace) params.containerPlace = filterForm.containerPlace
+
+  return params
+}
 /**
  * 直接从 store 读取 tabList
  */
@@ -223,10 +339,7 @@ const loadList = async (reset = false) => {
   try {
     const res: any = await fetchListApi({
       status: currentStatus.value,
-      params: {
-        pageNum: pageNum.value,
-        pageSize: pageSize.value
-      }
+      params: buildListParams()
     })
 
     const data = res?.data || res || {}
@@ -738,5 +851,135 @@ const submitQuote = async (data?: any) => {
   color: #1677ff;
   font-size: 26rpx;
   white-space: nowrap;
+}
+
+.filter-btn {
+  height: 58rpx;
+  padding: 0 16rpx;
+  border-radius: 16rpx;
+  background: #f6f8fc;
+  border: 1px solid #e7ecf3;
+  color: #4b5563;
+  display: flex;
+  align-items: center;
+  gap: 6rpx;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+.filter-icon {
+  font-size: 24rpx;
+  color: #1f6dff;
+  line-height: 1;
+}
+
+.filter-text {
+  font-size: 24rpx;
+  line-height: 1;
+}
+
+@keyframes slideDown {
+  0% {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.filter-mask {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  z-index: 10001;
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.filter-card {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: #fff;
+  border-radius: 0 0 24rpx 24rpx;
+  padding: 30rpx;
+  box-shadow: $shadow-popup;
+  transform: translateY(-100%);
+  animation: slideDown 0.25s ease forwards;
+  max-height: 78vh;
+  overflow-y: auto;
+}
+
+.filter-title {
+  text-align: center;
+  font-size: 32rpx;
+  font-weight: 600;
+  margin-bottom: 24rpx;
+  color: $color-text;
+}
+
+.filter-item {
+  margin-bottom: 20rpx;
+}
+
+.row-item {
+  display: flex;
+  align-items: center;
+}
+
+.filter-label {
+  width: 150rpx;
+  flex-shrink: 0;
+  font-size: 28rpx;
+  color: $color-text-2;
+}
+
+.filter-input {
+  flex: 1;
+  height: 72rpx;
+  padding: 0 20rpx;
+  box-sizing: border-box;
+  border: 1px solid $color-border;
+  border-radius: $radius-sm;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  font-size: 28rpx;
+  color: $color-text;
+}
+
+.filter-placeholder {
+  color: $color-text-3;
+}
+
+.filter-value {
+  color: $color-text;
+}
+
+.date-range {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+}
+
+.date-range picker {
+  flex: 1;
+}
+
+.date-box {
+  width: 100%;
+  min-width: 0;
+}
+
+.date-separator {
+  flex-shrink: 0;
+  color: $color-text-3;
+  font-size: 26rpx;
 }
 </style>

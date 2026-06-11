@@ -27,7 +27,8 @@
         "navigationBarTitleText": "我的询价单",
         "h5": {
           "navigationStyle": "custom"
-        }
+        },
+        "enablePullDownRefresh": true
       }
     },
     {
@@ -36,7 +37,8 @@
         "navigationBarTitleText": "我的物流单",
         "h5": {
           "navigationStyle": "custom"
-        }
+        },
+        "enablePullDownRefresh": true
       }
     },
     {

@@ -28,10 +28,6 @@
             <text class="summary-value">{{ detail.containerInfo }}</text>
           </view>
 
-          <view class="summary-item" v-if="detail.goodsName">
-            <text class="summary-label">品名</text>
-            <text class="summary-value">{{ detail.goodsName || '-' }}</text>
-          </view>
 
           <view class="summary-item" v-if="detail.planLoadingTime">
             <text class="summary-label">提货时间</text>
@@ -41,6 +37,11 @@
           <view class="summary-item" v-if="detail.weight">
             <text class="summary-label">货重</text>
             <text class="summary-value">{{ detail.weight || '-' }}</text>
+          </view>
+          
+          <view class="summary-item" v-if="detail.goodsName">
+            <text class="summary-label">品名</text>
+            <text class="summary-value">{{ detail.goodsName || '-' }}</text>
           </view>
         </view>
       </view>

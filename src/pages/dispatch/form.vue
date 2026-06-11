@@ -14,7 +14,7 @@
 
           <view class="form-item">
             <text class="label required">联系方式</text>
-            <input v-model="form.phone" class="input" type="number" placeholder="请输入联系方式"
+            <input v-model="form.phone" class="input" type="number" maxlength="11" placeholder="请输入联系方式"
               placeholder-class="placeholder" />
           </view>
 
@@ -79,50 +79,124 @@ onLoad((options) => {
   orderId.value = String(options?.id || '')
 })
 
-const handleSubmit = async () => {
+const phoneReg = /^1[3-9]\d{9}$/
+
+const validateForm = () => {
   if (!orderId.value) {
     uni.showToast({
       title: '缺少订单ID',
       icon: 'none'
     })
-    return
+    return false
   }
 
-  if (!form.driverName || !form.phone || !form.idCard || !form.truckNo || !form.trailerNo || !form.carWeight || !form.carLength) {
+  if (!form.driverName.trim()) {
     uni.showToast({
-      title: '请填写完整信息',
+      title: '请输入司机姓名',
       icon: 'none'
     })
-    return
+    return false
   }
+
+  if (!form.phone.trim()) {
+    uni.showToast({
+      title: '请输入联系方式',
+      icon: 'none'
+    })
+    return false
+  }
+
+  if (!phoneReg.test(form.phone.trim())) {
+    uni.showToast({
+      title: '请输入正确的手机号',
+      icon: 'none'
+    })
+    return false
+  }
+
+  if (!form.idCard.trim()) {
+    uni.showToast({
+      title: '请输入身份证号',
+      icon: 'none'
+    })
+    return false
+  }
+
+  if (!form.truckNo.trim()) {
+    uni.showToast({
+      title: '请输入车牌号',
+      icon: 'none'
+    })
+    return false
+  }
+
+  if (!form.trailerNo.trim()) {
+    uni.showToast({
+      title: '请输入车挂号',
+      icon: 'none'
+    })
+    return false
+  }
+
+  if (!form.carWeight.trim()) {
+    uni.showToast({
+      title: '请输入车挂重',
+      icon: 'none'
+    })
+    return false
+  }
+
+  if (!form.carLength.trim()) {
+    uni.showToast({
+      title: '请输入车长',
+      icon: 'none'
+    })
+    return false
+  }
+
+  return true
+}
+
+const handleSubmit = async () => {
+  if (!validateForm()) return
 
   const payload = {
     id: orderId.value,
-    driver: form.driverName,
-    phone: form.phone,
-    idCard: form.idCard,
-    carNo: form.truckNo,
-    carRegistration: form.trailerNo,
-    carWeight: form.carWeight,
-    carLength: form.carLength
+    driver: form.driverName.trim(),
+    phone: form.phone.trim(),
+    idCard: form.idCard.trim(),
+    carNo: form.truckNo.trim(),
+    carRegistration: form.trailerNo.trim(),
+    carWeight: form.carWeight.trim(),
+    carLength: form.carLength.trim()
   }
 
   submitting.value = true
   uni.showLoading({ title: '提交中...' })
 
-  const res: any = await dispatchingLogisticsTruckApi(payload)
+  try {
+    await dispatchingLogisticsTruckApi(payload)
 
-
-  uni.showToast({
-    title: '调度成功',
-    icon: 'success'
-  })
-
-  setTimeout(() => {
-    uni.reLaunch({
-      url: '/pages/logistics/list'
+    uni.showToast({
+      title: '调度成功',
+      icon: 'success'
     })
-  }, 300)
+
+    setTimeout(() => {
+      uni.reLaunch({
+        url: '/pages/logistics/list'
+      })
+    }, 300)
+  } catch (err: any) {
+    console.error('调度提交失败：', err)
+    uni.showToast({
+      title: err?.message || '提交失败',
+      icon: 'none'
+    })
+  } finally {
+    submitting.value = false
+    uni.hideLoading()
+  }
 }
 </script>
 

@@ -162,7 +162,7 @@ type OptionItem = {
 }
 
 const mode = ref<LoginMode>('choose')
-const account = ref(import.meta.env.VITE_MOCK_CODE ? '微信用户_5437af' : '')
+const account = ref(import.meta.env.VITE_MOCK_CODE ? '6Y17r' : '')
 const password = ref(import.meta.env.VITE_MOCK_CODE ? '123456' : '')
 const loading = ref(false)
 const showPassword = ref(false)

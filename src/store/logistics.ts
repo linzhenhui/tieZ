@@ -28,7 +28,6 @@ export interface StatusDictItem {
 }
 
 interface LogisticsCount {
-  cancelCount: number
   dispatchingCount: number
   pickingCount: number
   endCount: number
@@ -51,7 +50,6 @@ export const useLogisticsStore = defineStore('logistics', () => {
 
   // 统计缓存
   const ownerLogisticsCount = ref<LogisticsCount>({
-    cancelCount: 0,
     dispatchingCount: 0,
     pickingCount: 0,
     endCount: 0,
@@ -59,7 +57,6 @@ export const useLogisticsStore = defineStore('logistics', () => {
   })
 
   const fleetLogisticsCount = ref<LogisticsCount>({
-    cancelCount: 0,
     dispatchingCount: 0,
     pickingCount: 0,
     endCount: 0,
@@ -75,7 +72,6 @@ export const useLogisticsStore = defineStore('logistics', () => {
     '1': 'dispatchingCount',
     '2': 'pickingCount',
     '3': 'endCount',
-    '4': 'cancelCount'
   }
 
   const FLEET_LOGISTICS_COUNT_MAP: Record<string, keyof LogisticsCount> = {
@@ -83,7 +79,6 @@ export const useLogisticsStore = defineStore('logistics', () => {
     '1': 'dispatchingCount',
     '2': 'pickingCount',
     '3': 'endCount',
-    '4': 'cancelCount'
   }
 
   /**
@@ -133,40 +128,32 @@ export const useLogisticsStore = defineStore('logistics', () => {
     if (role.value === 'owner') {
       const res: any = await getMyLogisticsCountApi()
       const data = res?.data || res || {}
-
       ownerLogisticsCount.value = {
-        cancelCount: data.cancelCount || 0,
         dispatchingCount: data.dispatchingCount || 0,
         pickingCount: data.pickingCount || 0,
         endCount: data.endCount || 0,
         waitingCount: data.waitingCount || 0
       }
-
       applyTabsBadge()
     } else if (role.value === 'admin') {
       const res: any = await getgmTruckLogisticsCountApi()
       const data = res?.data || res || {}
       ownerLogisticsCount.value = {
-        cancelCount: data.cancelCount || 0,
         dispatchingCount: data.dispatchingCount || 0,
         pickingCount: data.pickingCount || 0,
         endCount: data.endCount || 0,
         waitingCount: data.waitingCount || 0
       }
-
       applyTabsBadge()
     } else {
       const res: any = await getTruckLogisticsCountApi()
       const data = res?.data || res || {}
-
       fleetLogisticsCount.value = {
-        cancelCount: data.cancelCount || 0,
         dispatchingCount: data.dispatchingCount || 0,
         pickingCount: data.pickingCount || 0,
         endCount: data.endCount || 0,
         waitingCount: data.waitingCount || 0
       }
-
       applyTabsBadge()
     }
   }

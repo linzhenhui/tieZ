@@ -91,7 +91,7 @@ import { BASE_URL } from '@/config/env'
 
 const orderId = ref('')
 const loading = ref(false)
-
+const containerNoReg = /^[A-Z]{4}\d{7}$/
 
 const form = reactive({
   containerNo: '',
@@ -125,9 +125,21 @@ const removeOtherPhoto = (index: number) => {
 }
 
 const validateForm = () => {
-  if (!form.containerNo || !form.sealNo || !form.pickupBoxDate) {
+  const containerNo = form.containerNo.trim().toUpperCase()
+  const sealNo = form.sealNo.trim()
+  const pickupBoxDate = form.pickupBoxDate.trim()
+
+  if (!containerNo || !sealNo || !pickupBoxDate) {
     uni.showToast({
       title: '请填写完整基础信息',
+      icon: 'none'
+    })
+    return false
+  }
+
+  if (!containerNoReg.test(containerNo)) {
+    uni.showToast({
+      title: '请输入正确的集装箱箱号',
       icon: 'none'
     })
     return false
@@ -169,14 +181,14 @@ const handleSubmit = async () => {
   try {
     await pickupBoxApi({
       id: orderId.value,
-      cont: form.containerNo,
-      contTitle: form.sealNo,
+      cont: form.containerNo.trim().toUpperCase(),
+      contTitle: form.sealNo.trim(),
       pickUpTime: form.pickupBoxDate,
       contBottomImg: form.contBottomImg,
       namePlateImg: form.namePlateImg,
       pickUpEmptyImg: form.pickUpEmptyImg,
       pickUpOpenEmptyImg: form.pickUpOpenEmptyImg,
-      pickUpOtherImg: form.otherPhotos.filter(Boolean).toString() // 过滤掉空字符串并转成逗号分隔的字符串
+      pickUpOtherImg: form.otherPhotos.filter(Boolean).toString()
     })
 
     uni.showToast({

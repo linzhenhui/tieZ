@@ -14,7 +14,6 @@ interface TabItem {
 
 interface InquiryCountOwner {
   quotedCount?: number
-  cancelCount?: number
   placedCount?: number
   inquiryCount?: number
   ingCount?: number
@@ -22,7 +21,6 @@ interface InquiryCountOwner {
 
 interface InquiryCountFleet {
   quotedCount: number
-  cancelCount: number
   inquiryCount: number
 }
 
@@ -71,16 +69,13 @@ const OWNER_COUNT_FIELD_MAP: Record<string, keyof InquiryCountOwner> = {
   // 已报价: quotedCount
   '2': 'quotedCount',
   // 已派单 / 已下单 / 已接单（按你实际字典改）
-  '3': 'placedCount',
-  // 已取消
-  '4': 'cancelCount'
+  '3': 'placedCount'
 }
 
 const FLEET_COUNT_FIELD_MAP: Record<string, keyof InquiryCountFleet> = {
   // 示例：按你的实际字典值修改
   '1': 'inquiryCount',
   '2': 'quotedCount',
-  '3': 'cancelCount'
 }
 const OWNER_QUOTE_TAB_VALUE = '0,1'
 export const useInquiryStore = defineStore('inquiry', {
@@ -96,7 +91,6 @@ export const useInquiryStore = defineStore('inquiry', {
 
     ownerInquiryCount: {
       quotedCount: 0,
-      cancelCount: 0,
       placedCount: 0,
       inquiryCount: 0,
       ingCount: 0
@@ -104,7 +98,6 @@ export const useInquiryStore = defineStore('inquiry', {
 
     fleetInquiryCount: {
       quotedCount: 0,
-      cancelCount: 0,
       placedCount: 0,
       inquiryCount: 0,
       ingCount: 0
@@ -147,7 +140,6 @@ export const useInquiryStore = defineStore('inquiry', {
       console.log("🚀 ~ role:", role.value)
       const dictKey =
         role.value === 'fleet' ? 'pri_inquiry_quote_status' : 'pri_inquiry_status'
-
       const res: any = await getDictDataApi(dictKey)
       const rows = Array.isArray(res) ? res : res?.data || []
       if (role.value === 'owner') {
@@ -185,13 +177,46 @@ export const useInquiryStore = defineStore('inquiry', {
         if (item4) {
           tabs.push({
             label: item4.dictLabel || '已取消',
-            value: '4',
-            badge: 0
+            value: '4'
           })
         }
         this.ownerStatusTabs = tabs
         if (!this.ownerCurrentStatus && tabs.length) {
           this.ownerCurrentStatus = tabs[0].value
+        }
+        return tabs
+      }
+      if (role.value === 'fleet') {
+        const tabs: TabItem[] = []
+        // 报价中
+        const item2 = rows.find((i: any) => i.dictValue === '1')
+        if (item2) {
+          tabs.push({
+            label: '报价中',
+            value: '1',
+            badge: 0
+          })
+        }
+        // 已报价
+        const item3 = rows.find((i: any) => i.dictValue === '2')
+        if (item3) {
+          tabs.push({
+            label: '已报价',
+            value: '2',
+            badge: 0
+          })
+        }
+        // 已取消
+        const item4 = rows.find((i: any) => i.dictValue === '3')
+        if (item4) {
+          tabs.push({
+            label: item4.dictLabel || '已取消',
+            value: '3'
+          })
+        }
+        this.fleetStatusTabs = tabs
+        if (!this.fleetCurrentStatus && tabs.length) {
+          this.fleetCurrentStatus = tabs[0].value
         }
         return tabs
       }
@@ -210,25 +235,6 @@ export const useInquiryStore = defineStore('inquiry', {
         }
         return tabs
       }
-      // 车队端：保持原来的字典渲染逻辑
-      const tabs: TabItem[] = rows
-        .map((item: any) => {
-          if (item.dictValue === '1') {
-            item.dictLabel = '报价中'
-          }
-          return {
-            label: item.dictLabel,
-            value: item.dictValue,
-            badge: 0
-          }
-        })
-
-      this.fleetStatusTabs = tabs
-      if (!this.fleetCurrentStatus && tabs.length) {
-        this.fleetCurrentStatus = tabs[0].value
-      }
-
-      return tabs
     },
 
     /**
@@ -240,11 +246,10 @@ export const useInquiryStore = defineStore('inquiry', {
         const res: any = await getMyInquiryCountApi()
         const data = res?.data || res || {}
         this.ownerInquiryCount = {
-          quotedCount: data.quotedCount || 0,
-          cancelCount: data.cancelCount || 0,
-          placedCount: data.placedCount || 0,
-          inquiryCount: data.inquiryCount + data.ingCount || 0,
-          ingCount: data.ingCount || 0
+          quotedCount: data.quotedCount,
+          placedCount: data.placedCount,
+          inquiryCount: data.inquiryCount + data.ingCount,
+          ingCount: data.ingCount
         }
         this.applyTabsBadge()
       } else if (role.value === 'admin') {
@@ -269,21 +274,21 @@ export const useInquiryStore = defineStore('inquiry', {
           ...item,
           badge: this.ownerInquiryCount[
             OWNER_COUNT_FIELD_MAP[item.value] || 'inquiryCount'
-          ] || 0
+          ]
         }))
       } else if (role.value === 'admin') {
         this.fleetStatusTabs = this.fleetStatusTabs.map((item) => ({
           ...item,
           badge: this.fleetInquiryCount[
             OWNER_COUNT_FIELD_MAP[item.value] || 'inquiryCount'
-          ] || 0
+          ]
         }))
       } else {
         this.fleetStatusTabs = this.fleetStatusTabs.map((item) => ({
           ...item,
           badge: this.fleetInquiryCount[
             FLEET_COUNT_FIELD_MAP[item.value] || 'inquiryCount'
-          ] || 0
+          ]
         }))
         console.log("🚀 ~ this.fleetStatusTabs:", this.fleetStatusTabs)
       }
