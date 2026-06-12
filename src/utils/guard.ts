@@ -19,7 +19,7 @@ export const requireLogin = (
     userStore.setRedirectAfterLogin(redirectUrl)
 
     uni.redirectTo({
-      url: '/pages/login/index',
+      url: '/pages/mine/index',
       complete: () => {
         setTimeout(() => {
           jumpingToLogin = false
@@ -39,7 +39,7 @@ export const requireLogin = (
 
     setTimeout(() => {
       uni.reLaunch({
-        url: '/pages/login/index'
+        url: '/pages/mine/index'
       })
     }, 300)
 

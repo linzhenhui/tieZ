@@ -12,7 +12,7 @@
       <template v-if="list.length">
         <InquiryCard v-for="item in list" :key="item.id" :item="item" :actions="getActions(item.status)"
           @edit="handleEdit" @cancel="handleCancel" @confirm="handleConfirm" @quote="openQuotePopup"
-          @askprice="openAskpricePopup" />
+          @golog="handleGoLog" @askprice="openAskpricePopup" />
       </template>
 
       <EmptyState v-else text="暂无询价单数据" />
@@ -89,7 +89,7 @@
 
           <view class="filter-item row-item">
             <text class="filter-label">单号</text>
-            <input v-model="filterForm.orderNo" class="filter-input" placeholder="请输入单号"
+            <input v-model="filterForm.code" class="filter-input" placeholder="请输入单号"
               placeholder-class="filter-placeholder" />
           </view>
           <view class="filter-item row-item">
@@ -129,7 +129,7 @@
 
           <view class="filter-item row-item">
             <text class="filter-label">提箱地</text>
-            <input v-model="filterForm.containerPlace" class="filter-input" placeholder="请输入提箱地"
+            <input v-model="filterForm.pickUpPlace" class="filter-input" placeholder="请输入提箱地"
               placeholder-class="filter-placeholder" />
           </view>
 
@@ -179,10 +179,10 @@ const showFilterPanel = ref(false)
 const filterForm = reactive({
   pickupStartTime: '',
   pickupEndTime: '',
-  orderNo: '',
+  code: '',
   loadingPlace: '',
   destination: '',
-  containerPlace: ''
+  pickUpPlace: ''
 })
 
 const closeFilterPanel = () => {
@@ -200,10 +200,10 @@ const onPickupEndChange = (e: any) => {
 const resetFilter = async () => {
   filterForm.pickupStartTime = ''
   filterForm.pickupEndTime = ''
-  filterForm.orderNo = ''
+  filterForm.code = ''
   filterForm.loadingPlace = ''
   filterForm.destination = ''
-  filterForm.containerPlace = ''
+  filterForm.pickUpPlace = ''
   showFilterPanel.value = false
   await loadList(true)
 }
@@ -222,10 +222,10 @@ const buildListParams = () => {
   // 这里字段名按你的后端接口改
   if (filterForm.pickupStartTime) params.pickupStartTime = filterForm.pickupStartTime
   if (filterForm.pickupEndTime) params.pickupEndTime = filterForm.pickupEndTime
-  if (filterForm.orderNo) params.orderNo = filterForm.orderNo
+  if (filterForm.code) params.code = filterForm.code
   if (filterForm.loadingPlace) params.loadingPlace = filterForm.loadingPlace
   if (filterForm.destination) params.destination = filterForm.destination
-  if (filterForm.containerPlace) params.containerPlace = filterForm.containerPlace
+  if (filterForm.pickUpPlace) params.pickUpPlace = filterForm.pickUpPlace
 
   return params
 }
@@ -458,6 +458,11 @@ const getActions = (status: InquiryStatus) => {
       { text: '取消', event: 'cancel', type: 'warn' }
     ]
   }
+  if (status === '3') {
+    return [
+      { text: '查看物流单', event: 'golog', type: 'success' },
+    ]
+  }
 
   return []
 }
@@ -507,7 +512,11 @@ const openQuotePopup = async (id: string | number) => {
   currentQuoteId.value = id
   showQuotePopup.value = true
 }
-
+const handleGoLog = (id: string | number) => {
+  uni.navigateTo({
+    url: `/pages/logistics/detail?code=${id}`
+  })
+}
 const closeQuotePopup = () => {
   showQuotePopup.value = false
   currentQuoteId.value = ''

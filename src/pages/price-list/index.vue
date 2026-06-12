@@ -80,6 +80,7 @@
 import { ref, onMounted } from 'vue'
 import type { TruckQuoteItem } from '@/api'
 import { orderTruckApi } from '@/api'
+import { requestSubscribeMessageByRole } from '@/utils/subscribe'
 
 interface TruckQuoteStorage {
   form: {
@@ -143,6 +144,7 @@ const handleOrder = async (item: TruckQuoteItem) => {
       icon: 'success'
     })
 
+    await requestSubscribeMessageByRole()
     // 下单成功后跳转到物流单页面
     setTimeout(() => {
       uni.navigateTo({

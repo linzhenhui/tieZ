@@ -36,9 +36,9 @@
 
           <view class="summary-item" v-if="detail.weight">
             <text class="summary-label">货重</text>
-            <text class="summary-value">{{ detail.weight || '-' }}</text>
+            <text class="summary-value">{{ detail.weight || '-' }} KGS</text>
           </view>
-          
+
           <view class="summary-item" v-if="detail.goodsName">
             <text class="summary-label">品名</text>
             <text class="summary-value">{{ detail.goodsName || '-' }}</text>
@@ -47,7 +47,8 @@
       </view>
 
       <!-- 车辆信息 -->
-      <SectionCard title="车辆信息">
+      <SectionCard title="车辆信息"
+        v-if="detail.truckNo || detail.driverName || detail.idCard || detail.mobile || detail.plateNo || detail.carRegistration || detail.carWeight || detail.carLength">
         <view class="detail-list">
           <view class="detail-row" v-if="detail.driverName">
             <text class="label">司机</text>
@@ -81,7 +82,8 @@
       </SectionCard>
 
       <!-- 箱信息 -->
-      <SectionCard title="箱信息">
+      <SectionCard title="箱信息"
+        v-if="detail.cont || detail.contTitle || detail.pickUpTime || detail.loadingTime || detail.arriveTime">
         <view class="detail-list">
           <view class="detail-row" v-if="detail.cont">
             <text class="label">箱号</text>
@@ -107,7 +109,7 @@
       </SectionCard>
 
       <!-- 费用明细 -->
-      <SectionCard :title="isAdmin ? '成本明细' : '费用明细'" v-if="isFleet || isAdmin">
+      <SectionCard :title="isAdmin ? '成本明细' : '费用明细'" v-if="(isFleet || isAdmin) && fleetFeeRows.length">
         <view class="fee-table">
           <view class="fee-row fee-head">
             <text class="fee-cell">费项</text>
@@ -130,7 +132,7 @@
       </SectionCard>
 
       <!-- 费用明细 -->
-      <SectionCard :title="isAdmin ? '收入明细' : '费用明细'" v-if="isAdmin || isOwner">
+      <SectionCard :title="isAdmin ? '收入明细' : '费用明细'" v-if="(isAdmin || isOwner) && ownerFeeRows.length">
         <view class="fee-table">
           <view class="fee-row fee-head">
             <text class="fee-cell">费项</text>
@@ -149,11 +151,12 @@
           </view>
 
           <view v-if="!ownerFeeRows.length" class="empty-inline">暂无费用明细</view>
+          <view v-if="isAdmin" class="add-fee-btn" @click="openAddFeeDialog">+ 添加费用</view>
         </view>
       </SectionCard>
 
       <!-- 照片记录 -->
-      <SectionCard title="照片记录">
+      <SectionCard title="照片记录" v-if="photoList.length">
         <view class="photo-grid">
           <view class="photo-item" v-for="(img, index) in photoList" :key="index" @click="previewPhoto(img.url)">
             <image :src="img.url" mode="aspectFill" class="photo-img" />
@@ -165,7 +168,7 @@
       </SectionCard>
 
       <!-- 备注信息 -->
-      <SectionCard title="备注信息">
+      <SectionCard title="备注信息" v-if="detail.remark || detail.truckRemark || detail.inquiryRemark">
         <view class="remark-box">
           {{ detail.remark || detail.truckRemark || detail.inquiryRemark || '暂无备注' }}
         </view>
@@ -178,17 +181,57 @@
     </view>
 
     <view v-else class="empty-page">未找到物流单</view>
+
+    <view v-if="feeDialogVisible" class="fee-mask" @click="closeFeeDialog">
+      <view class="fee-dialog" @click.stop>
+        <view class="fee-dialog-title">
+          {{ feeDialogMode === 'add' ? '添加费用' : '修改费用' }}
+        </view>
+
+        <view class="fee-form-item">
+          <text class="fee-label">费用类型</text>
+          <picker mode="selector" :range="feeItemNames" :value="feeItemIndex >= 0 ? feeItemIndex : 0"
+            @change="onFeeItemChange">
+            <view class="fee-picker-box">
+              <text :class="['fee-picker-text', !feeDialogForm.feeItemName && 'placeholder']">
+                {{
+                  feeDialogForm.feeItemName ||
+                  (feeItemLoading ? '正在加载费用类型...' : '请选择费用类型')
+                }}
+              </text>
+            </view>
+          </picker>
+        </view>
+
+        <view class="fee-form-item">
+          <text class="fee-label">金额</text>
+          <input v-model="feeDialogForm.unitPrice" class="fee-input" type="digit" placeholder="请输入金额"
+            placeholder-class="placeholder" />
+        </view>
+
+        <view class="fee-form-item">
+          <text class="fee-label">备注</text>
+          <input v-model="feeDialogForm.remark" class="fee-input" placeholder="请输入备注" placeholder-class="placeholder" />
+        </view>
+
+        <view class="fee-dialog-footer">
+          <view class="fee-btn cancel" @click="closeFeeDialog">取消</view>
+          <view class="fee-btn confirm" @click="confirmFeeDialog">确定</view>
+        </view>
+      </view>
+    </view>
   </PageLayout>
+
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { reactive, computed, ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import PageLayout from '@/components/page-layout/index.vue'
 import SectionCard from '@/components/section-card/index.vue'
 import OrderBadge from '@/components/order-badge/index.vue'
 import { requireLogin } from '@/utils/guard'
-import { getDictDataApi } from '@/api'
+import { getDictDataApi, getFeeItemApi, addLogisticsDetailApi, type ArriveFeeItem } from '@/api'
 import { getMyLogisticsDetailApi, getAdminLogisticsDetailApi, getFleetLogisticsDetailApi } from '@/api/logistics'
 import { useUserStore } from '@/store/user'
 import { storeToRefs } from 'pinia'
@@ -205,11 +248,14 @@ const statusDictList = ref<Array<{ dictLabel: string; dictValue: string; dictSor
 
 onLoad((options) => {
   if (!requireLogin('/pages/logistics/detail')) return
-  detailId.value = String(options?.id || '')
+  detailId.value = String(options?.code || '')
   if (detailId.value) {
     loadDetail()
   }
   loadStatusDict()
+  if (isAdmin.value) {
+    loadFeeItems()
+  }
 })
 
 const loadStatusDict = async () => {
@@ -222,6 +268,110 @@ const loadStatusDict = async () => {
   } catch (err) {
     console.error('加载物流状态字典失败:', err)
   }
+}
+
+
+/** =========================
+ * 费用弹窗逻辑
+ * ========================= */
+const feeDialogVisible = ref(false)
+const feeDialogMode = ref<'add' | 'edit'>('add')
+const editingFeeIndex = ref(-1)
+
+const feeItemOptions = ref<{ id: number | string; name: string }[]>([])
+const feeItemNames = ref<string[]>([])
+const feeItemIndex = ref(-1)
+const feeItemLoading = ref(false)
+
+const feeDialogForm = reactive({
+  feeItemId: '' as number | string | '',
+  feeItemName: '',
+  unitPrice: '',
+  remark: ''
+})
+
+const resetFeeDialogForm = () => {
+  feeDialogForm.feeItemId = ''
+  feeDialogForm.feeItemName = ''
+  feeDialogForm.unitPrice = ''
+  feeDialogForm.remark = ''
+  editingFeeIndex.value = -1
+  feeItemIndex.value = -1
+}
+
+const loadFeeItems = async () => {
+  if (feeItemOptions.value.length || feeItemLoading.value) return
+
+  feeItemLoading.value = true
+  try {
+    const res: any = await getFeeItemApi()
+    const list = Array.isArray(res) ? res : []
+
+    feeItemOptions.value = list
+      .filter((item: any) => item && item.id != null)
+      .map((item: any) => ({
+        id: item.id,
+        name: item.name
+      }))
+
+    feeItemNames.value = feeItemOptions.value.map(item => item.name)
+  } catch (err) {
+    console.error('获取费用类型失败:', err)
+    uni.showToast({ title: '获取费用类型失败', icon: 'none' })
+  } finally {
+    feeItemLoading.value = false
+  }
+}
+
+const onFeeItemChange = (e: any) => {
+  const index = Number(e.detail.value)
+  const item = feeItemOptions.value[index]
+  if (!item) return
+
+  feeItemIndex.value = index
+  feeDialogForm.feeItemId = item.id
+  feeDialogForm.feeItemName = item.name
+}
+
+const openAddFeeDialog = async () => {
+  feeDialogMode.value = 'add'
+  resetFeeDialogForm()
+  feeDialogVisible.value = true
+}
+
+const closeFeeDialog = () => {
+  feeDialogVisible.value = false
+  resetFeeDialogForm()
+}
+
+const confirmFeeDialog = async () => {
+  if (!feeDialogForm.feeItemId) {
+    uni.showToast({ title: '请选择费用类型', icon: 'none' })
+    return
+  }
+
+  if (!feeDialogForm.feeItemName.trim()) {
+    uni.showToast({ title: '请选择费用类型', icon: 'none' })
+    return
+  }
+
+  if (!feeDialogForm.unitPrice.trim()) {
+    uni.showToast({ title: '请输入金额', icon: 'none' })
+    return
+  }
+
+  const extraFeeList: ArriveFeeItem[] = [{
+    feeItemId: feeDialogForm.feeItemId,
+    feeItemName: feeDialogForm.feeItemName.trim(),
+    unitPrice: feeDialogForm.unitPrice.trim(),
+    remark: feeDialogForm.remark.trim()
+  }]
+  await addLogisticsDetailApi({
+    id: detail.value.id,
+    extraFeeList
+  })
+  closeFeeDialog()
+  loadDetail()
 }
 
 const normalizeDetail = (row: any) => {
@@ -240,8 +390,8 @@ const normalizeDetail = (row: any) => {
       : '-',
     goodsName: row.detail || row.goodsName,
     pickupTime: row.pickUpTime,
-    weight: row.weight != null ? `${row.weight} KGS` : '-',
-    remark: row.notice || '',
+    weight: row.weight,
+    remark: row.notice,
 
     // 车辆信息
     driverName: row.driverName || row.driver,
@@ -581,5 +731,112 @@ const handleClose = () => {
   text-align: center;
   color: #8a94a6;
   font-size: 30rpx;
+}
+
+.add-btn,
+.add-fee-btn {
+  margin-top: 16rpx;
+  height: 80rpx;
+  line-height: 80rpx;
+  text-align: center;
+  border: 1px dashed $color-border;
+  border-radius: $radius-sm;
+  color: $color-primary;
+  font-size: 28rpx;
+  background: #fafcff;
+}
+
+/* 弹窗遮罩 */
+.fee-mask {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+}
+
+/* 弹窗主体 */
+.fee-dialog {
+  width: 650rpx;
+  background: #fff;
+  border-radius: 20rpx;
+  padding: 32rpx 28rpx 24rpx;
+  box-sizing: border-box;
+}
+
+.fee-dialog-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: $color-text;
+  margin-bottom: 24rpx;
+  text-align: center;
+}
+
+.fee-form-item {
+  margin-bottom: 22rpx;
+}
+
+.fee-label {
+  display: block;
+  font-size: 26rpx;
+  color: $color-text-2;
+  margin-bottom: 10rpx;
+}
+
+.fee-picker-box {
+  width: 100%;
+  height: 78rpx;
+  border: 1px solid $color-border;
+  border-radius: 12rpx;
+  background: $color-fill-light;
+  padding: 0 20rpx;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+}
+
+.fee-picker-text {
+  font-size: 28rpx;
+  color: $color-text;
+}
+
+.fee-input {
+  width: 100%;
+  height: 78rpx;
+  border: 1px solid $color-border;
+  border-radius: 12rpx;
+  background: $color-fill-light;
+  padding: 0 20rpx;
+  box-sizing: border-box;
+  font-size: 28rpx;
+  color: $color-text;
+}
+
+.fee-dialog-footer {
+  display: flex;
+  gap: 20rpx;
+  margin-top: 30rpx;
+}
+
+.fee-btn {
+  flex: 1;
+  height: 80rpx;
+  line-height: 80rpx;
+  text-align: center;
+  border-radius: 12rpx;
+  font-size: 28rpx;
+  font-weight: 600;
+}
+
+.fee-btn.cancel {
+  background: #f2f3f5;
+  color: $color-text-2;
+}
+
+.fee-btn.confirm {
+  background: $color-primary;
+  color: #fff;
 }
 </style>

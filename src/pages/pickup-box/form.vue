@@ -88,6 +88,7 @@ import UploadImage from '@/components/upload-grid/index.vue'
 import { pickupBoxApi } from '@/api/logistics'
 import { requireLogin } from '@/utils/guard'
 import { BASE_URL } from '@/config/env'
+import {isValidContainerNo} from "@/utils/validate";
 
 const orderId = ref('')
 const loading = ref(false)
@@ -137,7 +138,7 @@ const validateForm = () => {
     return false
   }
 
-  if (!containerNoReg.test(containerNo)) {
+  if (!isValidContainerNo(containerNo)) {
     uni.showToast({
       title: '请输入正确的集装箱箱号',
       icon: 'none'

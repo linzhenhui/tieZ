@@ -17,12 +17,26 @@
 
       <view class="row">
         <text class="label">装箱地</text>
-        <text class="value">{{ item.loadingPlace || '-' }}</text>
+        <view class="value-wrap">
+          <view v-if="splitText(item.loadingPlace!).length">
+            <view v-for="(place, index) in splitText(item.loadingPlace!)" :key="index" class="value-line">
+              {{ place }}
+            </view>
+          </view>
+          <text v-else class="value">-</text>
+        </view>
       </view>
 
       <view class="row">
         <text class="label">目的地</text>
-        <text class="value">{{ item.destination || '-' }}</text>
+        <view class="value-wrap">
+          <view v-if="splitText(item.destination!).length">
+            <view v-for="(place, index) in splitText(item.destination!)" :key="index" class="value-line">
+              {{ place }}
+            </view>
+          </view>
+          <text v-else class="value">-</text>
+        </view>
       </view>
 
       <view class="row">
@@ -50,11 +64,11 @@
         <text class="value">{{ item.notice }}</text>
       </view>
       <view v-if="item.price !== null && item.price !== undefined" class="price-row">
-        <text class="price-label">运费</text>
+        <text class="price-label">费用总计</text>
         <text class="price-value">{{ '¥' }} {{ item.price || '-' }}</text>
       </view>
       <view v-if="isAdmin && item.costPrice" class="price-row">
-        <text class="price-label">车队报价</text>
+        <text class="price-label">车队费用总计</text>
         <text class="price-value">{{ '¥' }} {{ item.costPrice || '-' }}</text>
       </view>
     </view>
@@ -80,7 +94,7 @@ const isAdmin = computed(() => role.value === 'admin')
 
 type ActionItem = {
   text: string
-  event: 'edit' | 'cancel' | 'confirm' | 'quote' | 'askprice'
+  event: 'edit' | 'cancel' | 'confirm' | 'quote' | 'askprice' | 'golog'
   type?: 'primary' | 'success' | 'warn' | 'default'
 }
 
@@ -115,10 +129,16 @@ const emit = defineEmits<{
   (e: 'confirm', id: string): void
   (e: 'quote', id: string): void
   (e: 'askprice', id: string): void
+  (e: 'golog', id: string): void
 }>()
 
 const inquiryStore = useInquiryStore()
-
+const splitText = (val: string) => {
+  return (val || '')
+    .split(/[,，]/)
+    .map(v => v.trim())
+    .filter(Boolean)
+}
 /**
  * 状态文案：从字典查
  */
@@ -150,11 +170,13 @@ const statusClass = computed(() => {
 
 const handleAction = (event: ActionItem['event']) => {
   const id = String(props.item.id)
+  const code = String(props.item.code)
   if (event === 'edit') emit('edit', id)
   if (event === 'cancel') emit('cancel', id)
   if (event === 'confirm') emit('confirm', id)
   if (event === 'quote') emit('quote', id)
   if (event === 'askprice') emit('askprice', id)
+  if (event === 'golog') emit('golog', code)
 }
 </script>
 
@@ -292,5 +314,31 @@ const handleAction = (event: ActionItem['event']) => {
   font-size: 34rpx;
   font-weight: 600;
   color: $color-primary;
+}
+
+.row {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 16rpx;
+}
+
+.label {
+  width: 120rpx;
+  flex-shrink: 0;
+  color: #666;
+}
+
+.value-wrap {
+  flex: 1;
+}
+
+.value-line {
+  color: #333;
+  line-height: 1.6;
+  margin-bottom: 6rpx;
+}
+
+.value {
+  color: #333;
 }
 </style>

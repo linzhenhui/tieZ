@@ -1,7 +1,7 @@
 <template>
   <view class="order-card">
     <view class="card-head">
-      <text class="order-no">{{ item.orderNo }}</text>
+      <text class="order-no">{{ item.code }}</text>
       <text class="time">{{ item.createdAt }}</text>
     </view>
 
@@ -37,11 +37,11 @@
       </view>
 
       <view class="price-row">
-        <text class="price-label">运费</text>
+        <text class="price-label">费用总计</text>
         <text class="price-value">{{ '¥' }} {{ isFleet ? item.costPrice : item.price || '-' }}</text>
       </view>
       <view class="price-row" v-if="isAdmin">
-        <text class="price-label">车队报价</text>
+        <text class="price-label">车队费用总计</text>
         <text class="price-value">{{ '¥' }} {{ item.costPrice || '-' }}</text>
       </view>
     </view>
@@ -85,7 +85,7 @@ const emit = defineEmits<{
   (e: 'detail', id: string | number): void
   (e: 'cancel', id: string | number): void
   (e: 'dispatch', id: string | number): void
-  (e: 'waiting', id: string | number): void
+  (e: 'waiting', id: string | number, status: string): void
   (e: 'stage', id: string | number, stageKey: StageKey): void
 }>()
 
@@ -110,6 +110,7 @@ const statusText = computed(() => {
   const hit = statusDictList.value.find(
     (item) => String(item.dictValue) === String(props.item.status)
   )
+  console.log("🚀 ~ props.item.status:", props.item.status)
   return hit?.dictLabel || String(props.item.status || '-')
 })
 
@@ -139,9 +140,7 @@ const isWaitingCount = computed(() => {
   const raw = String(props.item.status || '')
   return (
     text.includes('待派单') ||
-    // text.includes('调度中') ||
     raw === '0'
-    // raw === '1'
   )
 })
 
@@ -153,9 +152,7 @@ const isDispatching = computed(() => {
   const raw = String(props.item.status || '')
   return (
     text.includes('调度中') ||
-    text.includes('待调度') ||
-    raw === 'dispatching' ||
-    raw === 'dispatch'
+    raw === '1'
   )
 })
 
@@ -165,7 +162,16 @@ const isDispatching = computed(() => {
 const isPicking = computed(() => {
   const text = String(statusText.value || '')
   const raw = String(props.item.status || '')
-  return text.includes('提货中') || raw === 'picking' || raw === 'pickup'
+  return text.includes('提货中') || raw === '2'
+})
+
+/**
+ * 是否已取消
+ */
+const isCanceled = computed(() => {
+  const text = String(statusText.value || '')
+  const raw = String(props.item.status || '')
+  return text.includes('已取消') || raw === '4'
 })
 
 /**
@@ -216,6 +222,26 @@ const defaultActions = computed<ActionItem[]>(() => {
         {
           text: '派单',
           event: 'waiting',
+          type: 'primary',
+          status: props.item.status
+        },
+        {
+          text: '详情',
+          event: 'detail',
+          type: 'detail'
+        }
+      ]
+    }
+    if (isDispatching.value) {
+      return [
+        {
+          text: '取消',
+          event: 'cancel',
+          type: 'primary'
+        },
+        {
+          text: '调度',
+          event: 'dispatch',
           type: 'primary'
         },
         {
@@ -224,6 +250,22 @@ const defaultActions = computed<ActionItem[]>(() => {
           type: 'detail'
         }
       ]
+    }
+    if (isCanceled.value) {
+      return [
+        {
+          text: '详情',
+          event: 'detail',
+          type: 'detail'
+        },
+        {
+          text: '重新派单',
+          event: 'waiting',
+          type: 'primary',
+          status: props.item.status
+        }
+      ]
+
     }
   }
   // 车队端：调度中
@@ -294,13 +336,24 @@ const displayActions = computed(() => {
 
 const handleAction = (btn: ActionItem) => {
   const id = props.item.id
-
-  if (btn.event === 'stage') {
-    emit('stage', id, btn.stageKey || stageKey.value)
-    return
+  const code = props.item.code
+  switch (btn.event) {
+    case 'stage':
+      emit('stage', id, btn.stageKey || stageKey.value)
+      break
+    case 'waiting':
+      emit('waiting', id, String(props.item.status))
+      break
+    case 'detail':
+      emit('detail', code) // 这里我改成传 code 了
+      break
+    case 'cancel':
+      emit('cancel', id)
+      break
+    case 'dispatch':
+      emit('dispatch', id)
+      break
   }
-
-  emit(btn.event as Exclude<ActionEvent, 'stage'>, id)
 }
 </script>
 

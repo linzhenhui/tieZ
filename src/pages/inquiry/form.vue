@@ -192,6 +192,7 @@ import PageLayout from '@/components/page-layout/index.vue'
 import { editInquiryTruckApi, addManualInquiryApi, getDictDataApi, detailInquiryTruckApi, queryListApi, createOrderApi, postCreateOrderApi } from '@/api'
 import { useUserStore } from '@/store/user'
 import { storeToRefs } from 'pinia'
+import { requestSubscribeMessageByRole } from '@/utils/subscribe'
 const userStore = useUserStore()
 const { role } = storeToRefs(userStore)
 
@@ -446,6 +447,7 @@ const handleInquiry = async () => {
       }
     }
 
+    await requestSubscribeMessageByRole()
     setTimeout(() => {
       if (isEditMode.value || isAdmin.value) {
         // 编辑成功后返回上一页

@@ -147,7 +147,6 @@ export const useUserStore = defineStore('user', {
       this.role = ''
       this.userInfo = defaultUserInfo()
       this.redirectAfterLogin = ''
-
       try {
         uni.removeStorageSync(USER_KEY)
       } catch { }

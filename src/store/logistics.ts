@@ -180,7 +180,33 @@ export const useLogisticsStore = defineStore('logistics', () => {
       }))
     }
   }
+  const resetState = () => {
+    ownerStatusTabs.value = []
+    fleetStatusTabs.value = []
 
+    ownerStatusDictList.value = []
+    fleetStatusDictList.value = []
+
+    ownerCurrentStatus.value = ''
+    fleetCurrentStatus.value = ''
+
+    ownerTabsLoaded.value = false
+    fleetTabsLoaded.value = false
+
+    ownerLogisticsCount.value = {
+      dispatchingCount: 0,
+      pickingCount: 0,
+      endCount: 0,
+      waitingCount: 0
+    }
+
+    fleetLogisticsCount.value = {
+      dispatchingCount: 0,
+      pickingCount: 0,
+      endCount: 0,
+      waitingCount: 0
+    }
+  }
   /**
    * 可选：一次性刷新字典 + 数量
    * 只是组合方法，不会自动触发
@@ -233,6 +259,7 @@ export const useLogisticsStore = defineStore('logistics', () => {
     refreshTabsAndCount,
     setCurrentStatus,
     submitPickupGoods,
-    submitArrive
+    submitArrive,
+    resetState
   }
 })

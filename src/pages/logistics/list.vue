@@ -1,13 +1,25 @@
 <template>
   <PageLayout :currentPath="'/pages/logistics/list'" :showTabbar="true">
     <view class="page" :key="currentStatus">
-      <StatusTabs v-model="currentStatus" :list="tabList" />
+      <StatusTabs v-model="currentStatus" :list="tabList">
+        <template #right>
+          <view class="filter-btn" @click="showFilterPanel = true">
+            <text class="filter-icon">⚲</text>
+            <text class="filter-text">筛选</text>
+          </view>
+        </template>
+      </StatusTabs>
+
       <view v-if="currentList.length">
         <LogisticsCard v-for="item in currentList" :key="item.id" :item="item" @detail="goDetail" @cancel="handleCancel"
           @dispatch="handleDispatch" @stage="handleStage" @waiting="handleWaiting" />
       </view>
       <EmptyState v-else text="暂无物流单数据" />
+
+      <view v-if="loadingMore" class="loading-text">加载中...</view>
+      <view v-else-if="finished && currentList.length" class="loading-text">没有更多了</view>
     </view>
+
     <!-- 派单弹窗 -->
     <view v-if="showAskPopup" class="popup-mask" @click="closeAskPopup">
       <view class="popup-card" @click.stop>
@@ -28,6 +40,7 @@
         </view>
       </view>
     </view>
+
     <!-- 车队选择弹窗 -->
     <view v-if="teamSelectorVisible" class="selector-mask" @click="closeTeamSelector" @touchmove.stop.prevent>
       <view class="selector-card" @click.stop>
@@ -63,11 +76,72 @@
         </view>
       </view>
     </view>
+
+    <!-- 筛选面板 -->
+    <view v-if="showFilterPanel" class="filter-mask" @click="closeFilterPanel">
+      <view class="filter-card" @click.stop>
+        <view class="filter-title">筛选</view>
+
+        <view class="filter-item row-item">
+          <text class="filter-label">单号</text>
+          <input v-model="filterForm.code" class="filter-input" placeholder="请输入单号"
+            placeholder-class="filter-placeholder" />
+        </view>
+
+        <view class="filter-item row-item">
+          <text class="filter-label">提货时间</text>
+
+          <view class="date-range">
+            <picker mode="date" :value="filterForm.pickupStartTime" @change="onPickupStartChange">
+              <view class="filter-input date-box">
+                <text :class="filterForm.pickupStartTime ? 'filter-value' : 'filter-placeholder'">
+                  {{ filterForm.pickupStartTime || '开始日期' }}
+                </text>
+              </view>
+            </picker>
+
+            <text class="date-separator">-</text>
+
+            <picker mode="date" :value="filterForm.pickupEndTime" @change="onPickupEndChange">
+              <view class="filter-input date-box">
+                <text :class="filterForm.pickupEndTime ? 'filter-value' : 'filter-placeholder'">
+                  {{ filterForm.pickupEndTime || '结束日期' }}
+                </text>
+              </view>
+            </picker>
+          </view>
+        </view>
+
+        <view class="filter-item row-item">
+          <text class="filter-label">装箱地</text>
+          <input v-model="filterForm.loadingPlace" class="filter-input" placeholder="请输入装箱地"
+            placeholder-class="filter-placeholder" />
+        </view>
+
+        <view class="filter-item row-item">
+          <text class="filter-label">目的地</text>
+          <input v-model="filterForm.destination" class="filter-input" placeholder="请输入目的地"
+            placeholder-class="filter-placeholder" />
+        </view>
+
+        <view class="filter-item row-item">
+          <text class="filter-label">提箱地</text>
+          <input v-model="filterForm.pickUpPlace" class="filter-input" placeholder="请输入提箱地"
+            placeholder-class="filter-placeholder" />
+        </view>
+
+        <view class="popup-actions">
+          <button class="popup-btn cancel" @click="resetFilter">重置</button>
+          <button class="popup-btn confirm" @click="applyFilter">查询</button>
+        </view>
+      </view>
+    </view>
   </PageLayout>
 </template>
+
 <script setup lang="ts">
 import { reactive, computed, ref, watch } from 'vue'
-import { onShow } from '@dcloudio/uni-app'
+import { onShow, onPullDownRefresh, onReachBottom } from '@dcloudio/uni-app'
 import PageLayout from '@/components/page-layout/index.vue'
 import StatusTabs from '@/components/status-tabs/index.vue'
 import LogisticsCard from '@/components/logistics-card/index.vue'
@@ -84,6 +158,74 @@ import {
 } from '@/api'
 import type { LogisticsItem } from '@/api/logistics/type'
 import { storeToRefs } from 'pinia'
+
+onPullDownRefresh(async () => {
+  try {
+    await loadList(true)
+  } finally {
+    uni.stopPullDownRefresh()
+  }
+})
+
+const showFilterPanel = ref(false)
+const filterForm = reactive({
+  pickupStartTime: '',
+  pickupEndTime: '',
+  code: '',
+  loadingPlace: '',
+  destination: '',
+  pickUpPlace: ''
+})
+
+const closeFilterPanel = () => {
+  showFilterPanel.value = false
+}
+
+const onPickupStartChange = (e: any) => {
+  filterForm.pickupStartTime = e.detail.value
+}
+
+const onPickupEndChange = (e: any) => {
+  filterForm.pickupEndTime = e.detail.value
+}
+
+const resetFilter = async () => {
+  filterForm.pickupStartTime = ''
+  filterForm.pickupEndTime = ''
+  filterForm.code = ''
+  filterForm.loadingPlace = ''
+  filterForm.destination = ''
+  filterForm.pickUpPlace = ''
+  showFilterPanel.value = false
+  await loadList(true)
+}
+
+const applyFilter = async () => {
+  showFilterPanel.value = false
+  await loadList(true)
+}
+
+const buildListParams = () => {
+  const params: Record<string, any> = {
+    pageNum: pageNum.value,
+    pageSize: pageSize.value
+  }
+
+  if (filterForm.pickupStartTime) params.pickupStartTime = filterForm.pickupStartTime
+  if (filterForm.pickupEndTime) params.pickupEndTime = filterForm.pickupEndTime
+  if (filterForm.code) params.code = filterForm.code
+  if (filterForm.loadingPlace) params.loadingPlace = filterForm.loadingPlace
+  if (filterForm.destination) params.destination = filterForm.destination
+  if (filterForm.pickUpPlace) params.pickUpPlace = filterForm.pickUpPlace
+
+  return params
+}
+
+const pageNum = ref(1)
+const pageSize = ref(10)
+const total = ref(0)
+const loadingMore = ref(false)
+const finished = ref(false)
 
 const userStore = useUserStore()
 const { role } = storeToRefs(userStore)
@@ -113,7 +255,6 @@ const currentList = ref<any[]>([])
 const loading = ref(false)
 const pageReady = ref(false)
 
-const NAV_PAGE_SIZE = 999
 const navigateLock = ref(false)
 
 /**
@@ -247,7 +388,7 @@ const submitAskprice = async () => {
 
     uni.showToast({ title: '派单提交成功', icon: 'success' })
     closeAskPopup()
-    await loadList()
+    await loadList(true)
   } catch (err) {
     console.error('提交派单失败:', err)
     uni.showToast({ title: (err as any)?.message || '提交失败', icon: 'none' })
@@ -262,8 +403,8 @@ const submitAskprice = async () => {
 const normalizeItem = (row: LogisticsItem) => {
   return {
     ...row,
-    orderNo: (row as any).code || `#${(row as any).id}`,
-    createdAt: (row as any).inquiryTime || (row as any).buildTime || '-',
+    code: (row as any).code || `#${(row as any).id}`,
+    createdAt: (row as any).planLoadingTime || (row as any).buildTime || '-',
     fromCity: (row as any).loadingPlace || '-',
     toCity: (row as any).destination || '-',
     boxPlace: (row as any).pickUpPlace || '-',
@@ -302,36 +443,67 @@ const safeNavigateTo = async (url: string) => {
 }
 
 /**
+ * 列表接口根据角色切换
+ */
+const fetchListApi = (params: any) => {
+  return isFleet.value
+    ? queryFleetLogisticsListApi(params)
+    : isOwner.value
+      ? queryMyLogisticsListApi(params)
+      : querygmFleetLogisticsListApi(params)
+}
+
+/**
  * 加载列表
  */
-const loadList = async () => {
-  if (loading.value) return
-  loading.value = true
+const loadList = async (reset = false) => {
+  if (loading.value || loadingMore.value) return
+  if (finished.value && !reset) return
+
+  if (reset) {
+    pageNum.value = 1
+    total.value = 0
+    currentList.value = []
+    finished.value = false
+  }
+
+  reset ? (loading.value = true) : (loadingMore.value = true)
 
   try {
-    const req = isFleet.value
-      ? queryFleetLogisticsListApi
-      : isOwner.value
-        ? queryMyLogisticsListApi
-        : querygmFleetLogisticsListApi
-
-    const res: any = await req({
+    const res: any = await fetchListApi({
       status: currentStatus.value || '',
-      params: {
-        pageSize: NAV_PAGE_SIZE,
-        pageNum: 1
-      }
+      params: buildListParams()
     })
 
     // 兼容不同后端返回结构
-    const rows = res?.rows || res?.data?.rows || []
-    currentList.value = (rows || []).map(normalizeItem)
+    const data = res?.data || res || {}
+    const rows = data?.rows || []
+    const count = data?.total || 0
+
+    total.value = count
+
+    const listRows = (rows || []).map(normalizeItem)
+
+    if (pageNum.value === 1) {
+      currentList.value = listRows
+    } else {
+      currentList.value = currentList.value.concat(listRows)
+    }
+
+    if (currentList.value.length >= total.value || rows.length < pageSize.value) {
+      finished.value = true
+    } else {
+      pageNum.value += 1
+    }
+
     await logisticsStore.loadLogisticsCount()
   } catch (err) {
     console.error('加载物流单列表失败:', err)
     currentList.value = []
   } finally {
     loading.value = false
+    loadingMore.value = false
+    uni.stopPullDownRefresh?.()
   }
 }
 
@@ -340,7 +512,7 @@ const loadList = async () => {
  */
 watch(currentStatus, async () => {
   if (!pageReady.value) return
-  await loadList()
+  await loadList(true)
 })
 
 /**
@@ -357,7 +529,7 @@ onShow(async () => {
     }
 
     pageReady.value = true
-    await loadList()
+    await loadList(true)
     await loadDict()
   }
 })
@@ -365,16 +537,14 @@ onShow(async () => {
 /**
  * 跳详情
  */
-const goDetail = (id: string | number) => {
-  safeNavigateTo(`/pages/logistics/detail?id=${id}`)
+const goDetail = (code: string | number) => {
+  safeNavigateTo(`/pages/logistics/detail?code=${code}`)
 }
 
 /**
  * 车队端取消物流单
  */
 const handleCancel = (id: string | number) => {
-  if (isOwner.value) return
-
   uni.showModal({
     title: '提示',
     content: '确认取消该物流单吗？',
@@ -387,7 +557,7 @@ const handleCancel = (id: string | number) => {
           title: '取消成功',
           icon: 'success'
         })
-        await loadList()
+        await loadList(true)
       } catch (err: any) {
         console.error('取消物流单失败:', err)
         uni.showToast({
@@ -400,10 +570,12 @@ const handleCancel = (id: string | number) => {
 }
 
 /**
- * 车队端：调度
+ * 企微端：派单
  */
-const handleWaiting = (id: string | number) => {
-  safeNavigateTo(`/pages/dispatch/form?id=${id}`)
+const handleWaiting = (id: string | number, status: string) => {
+  if (status === '0') {
+    safeNavigateTo(`/pages/dispatch/form?id=${id}`)
+  }
 }
 
 /**
@@ -426,7 +598,14 @@ const handleStage = (id: string | number, stageKey: StageKey) => {
   const url = routeMap[stageKey] || '/pages/pickup-box/form'
   safeNavigateTo(`${url}?id=${id}`)
 }
+
+onReachBottom(async () => {
+  if (!finished.value) {
+    await loadList(false)
+  }
+})
 </script>
+
 <style scoped lang="scss">
 .page {
   min-height: 100vh;
@@ -462,5 +641,170 @@ const handleStage = (id: string | number, stageKey: StageKey) => {
   color: #1677ff;
   font-size: 26rpx;
   white-space: nowrap;
+}
+
+.filter-btn {
+  height: 58rpx;
+  padding: 0 16rpx;
+  border-radius: 16rpx;
+  background: #f6f8fc;
+  border: 1px solid #e7ecf3;
+  color: #4b5563;
+  display: flex;
+  align-items: center;
+  gap: 6rpx;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+.filter-icon {
+  font-size: 24rpx;
+  color: #1f6dff;
+  line-height: 1;
+}
+
+.filter-text {
+  font-size: 24rpx;
+  line-height: 1;
+}
+
+.loading-text {
+  text-align: center;
+  color: #999;
+  font-size: 26rpx;
+  padding: 20rpx 0 40rpx;
+}
+
+@keyframes slideDown {
+  0% {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.filter-mask {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  z-index: 10001;
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.filter-card {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: #fff;
+  border-radius: 0 0 24rpx 24rpx;
+  padding: 30rpx;
+  box-shadow: $shadow-popup;
+  transform: translateY(-100%);
+  animation: slideDown 0.25s ease forwards;
+  max-height: 78vh;
+  overflow-y: auto;
+}
+
+.filter-title {
+  text-align: center;
+  font-size: 32rpx;
+  font-weight: 600;
+  margin-bottom: 24rpx;
+  color: $color-text;
+}
+
+.filter-item {
+  margin-bottom: 20rpx;
+}
+
+.row-item {
+  display: flex;
+  align-items: center;
+}
+
+.filter-label {
+  width: 150rpx;
+  flex-shrink: 0;
+  font-size: 28rpx;
+  color: $color-text-2;
+}
+
+.filter-input {
+  flex: 1;
+  height: 72rpx;
+  padding: 0 20rpx;
+  box-sizing: border-box;
+  border: 1px solid $color-border;
+  border-radius: $radius-sm;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  font-size: 28rpx;
+  color: $color-text;
+}
+
+.filter-placeholder {
+  color: $color-text-3;
+}
+
+.filter-value {
+  color: $color-text;
+}
+
+.date-range {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+}
+
+.date-range picker {
+  flex: 1;
+}
+
+.date-box {
+  width: 100%;
+  min-width: 0;
+}
+
+.date-separator {
+  flex-shrink: 0;
+  color: $color-text-3;
+  font-size: 26rpx;
+}
+
+.popup-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 30rpx;
+  gap: 20rpx;
+}
+
+.popup-btn {
+  flex: 1;
+  height: 72rpx;
+  line-height: 72rpx;
+  border-radius: $radius-sm;
+  font-size: 28rpx;
+  margin: 0;
+}
+
+.cancel {
+  background: #fff;
+  color: $color-text-2;
+  border: 1px solid $color-border;
+}
+
+.confirm {
+  background: $color-primary;
+  color: #fff;
+  border: 1px solid $color-primary;
 }
 </style>

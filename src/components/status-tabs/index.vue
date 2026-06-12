@@ -7,7 +7,7 @@
             @click="selectTab(item.value)">
             <text class="tab-label">{{ item.label }}</text>
 
-            <view v-if="item.badge !== undefined" class="badge">
+            <view v-if="item.badge !== undefined && item.label != '已取消'" class="badge">
               <text class="badge-text">{{ item.badge }}</text>
             </view>
           </view>

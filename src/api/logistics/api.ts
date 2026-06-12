@@ -38,30 +38,30 @@ export const querygmFleetLogisticsListApi = (data: LogisticsQueryListParams) => 
 }
 
 /** 我的物流单详情 */
-export const getMyLogisticsDetailApi = (id: string | number) => {
+export const getMyLogisticsDetailApi = (code: string | number) => {
   return http<BaseResult<LogisticsItem>>({
     url: '/api/pri/logisticsTruck/myLogisticsTruck/detail',
     method: 'GET',
-    data: { id }
+    data: { code }
   })
 }
 
 /** 车队物流单详情 */
-export const getFleetLogisticsDetailApi = (id: string | number) => {
+export const getFleetLogisticsDetailApi = (code: string | number) => {
   return http<BaseResult<LogisticsItem>>({
     url: '/api/pri/logisticsTruck/truckLogisticsTruck/detail',
     method: 'GET',
-    data: { id }
+    data: { code }
   })
 }
 
 
 /** 管理端物流单详情 */
-export const getAdminLogisticsDetailApi = (id: string | number) => {
+export const getAdminLogisticsDetailApi = (code: string | number) => {
   return http<BaseResult<LogisticsItem>>({
     url: '/api/pri/logisticsTruck/gm/myLogisticsTruck/detail',
     method: 'GET',
-    data: { id }
+    data: { code }
   })
 }
 
@@ -116,9 +116,10 @@ export const submitPickupGoodsApi = (data: SubmitPickupGoodsParams) => {
 }
 
 export interface ArriveFeeItem {
-  feeType: string
-  feeAmount: string
-  feeRemark: string
+  feeItemName: string
+  unitPrice: string
+  feeItemId: string | number
+  remark: string
 }
 
 export interface SubmitArriveParams {
@@ -126,7 +127,7 @@ export interface SubmitArriveParams {
   arriveTime: string
   arriveImg: string
   arriveOtherImg?: string
-  extraFeeList?: any[]
+  extraFeeList?: ArriveFeeItem[]
 }
 
 /**
@@ -147,5 +148,26 @@ export const getFeeItemApi = () => {
   return request({
     url: '/api/bsd/getFeeItem',
     method: 'GET',
+  })
+}
+
+/**
+ * 新增物流单明细
+ * 新增应收费用
+
+入参{
+id：物流单id；
+extraFeeList：{
+unitPrice：单价，
+feeItemId：费项id，
+feeItemName：费项名称，
+remark：备注
+}
+ */
+export const addLogisticsDetailApi = (data: { id: string | number, extraFeeList: ArriveFeeItem[] }) => {
+  return request({
+    url: '/api/pri/inquiryTruck/addFee',
+    method: 'POST',
+    data
   })
 }

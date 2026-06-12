@@ -57,7 +57,6 @@ export function http<T = any>(options: RequestOptions): Promise<T> {
 
         if (statusCode && statusCode >= 200 && statusCode < 300) {
           const result = data as ApiResponse<T> | T
-          console.log("🚀 ~ http ~ result:", result)
 
 
           const apiResult = result as ApiResponse<T>
@@ -68,7 +67,7 @@ export function http<T = any>(options: RequestOptions): Promise<T> {
               icon: 'none'
             })
             uni.redirectTo({
-              url: '/pages/login/index',
+              url: '/pages/mine/index',
             })
             reject(res)
             return
